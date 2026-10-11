@@ -113,7 +113,7 @@ class _HomePageState extends State<HomePage> {
         if(key=='savings') DropdownButtonFormField<String>(value:savingKind,items:[DropdownMenuItem(value:'in',child:Text(t('savingsIn'))),DropdownMenuItem(value:'out',child:Text(t('savingsOut')))],onChanged:(v)=>setD(()=>savingKind=v??'in')),
         if(['fixed','variable','purchases','debts'].contains(key)) TextField(decoration:InputDecoration(labelText:t('due'),hintText:'YYYY-MM-DD'),onChanged:(v)=>due=v,controller:TextEditingController(text:due)),
       ])),
-      actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:(){final a=double.tryParse(amount.text.replaceAll(',','.'));if(name.text.trim().isEmpty||a==null||a<0)return;Navigator.pop(ctx,{'name':name.text.trim(),'amount':a,'note':note.text.trim(),'date':date,'due':due,'type':type,'kind':savingKind});},child:Text(t('save'))]
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:(){final a=double.tryParse(amount.text.replaceAll(',','.'));if(name.text.trim().isEmpty||a==null||a<0)return;Navigator.pop(ctx,{'name':name.text.trim(),'amount':a,'note':note.text.trim(),'date':date,'due':due,'type':type,'kind':savingKind});},child:Text(t('save')))]
     )));
     if(res==null)return;
     if(existing==null){res['id']=DateTime.now().microsecondsSinceEpoch.toString();records[key]!.add(res);}else{existing.addAll(res);}
@@ -147,7 +147,7 @@ class _HomePageState extends State<HomePage> {
       TextField(key:ValueKey(newPin),decoration:InputDecoration(labelText:t('pin')),keyboardType:TextInputType.number,maxLength:4,obscureText:true,onChanged:(v)=>newPin=v),
       SwitchListTile(value:lock,title:Text(t('lock')),onChanged:(v)=>setD(()=>lock=v)),
       Text(t('separate'),style:Theme.of(context).textTheme.bodySmall),
-    ])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:()async{language=lang;currency=curr;pin=newPin.length==4?newPin:'';appLock=lock&&pin.length==4;await persist();if(mounted)setState((){});if(ctx.mounted)Navigator.pop(ctx);},child:Text(t('save'))])));
+    ])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:()async{language=lang;currency=curr;pin=newPin.length==4?newPin:'';appLock=lock&&pin.length==4;await persist();if(mounted)setState((){});if(ctx.mounted)Navigator.pop(ctx);},child:Text(t('save')))])));
   }
   @override
   Widget build(BuildContext context) {
