@@ -126,7 +126,7 @@ class _HomePageState extends State<HomePage> {
     final next=DateTime.parse('${(r['date']??'$selectedMonth-01').toString().substring(0,7)}-01');
     final suggested=DateTime(next.year,next.month+1,1);
     final c=TextEditingController(text:'${suggested.year}-${suggested.month.toString().padLeft(2,'0')}-01');
-    final d=await showDialog<String>(context:context,builder:(ctx)=>AlertDialog(title:Text(t('defer')),content:TextField(controller:c,decoration:InputDecoration(labelText:t('dateTarget'),hintText:'YYYY-MM-DD')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,c.text),child:Text(t('save'))]));
+    final d=await showDialog<String>(context:context,builder:(ctx)=>AlertDialog(title:Text(t('defer')),content:TextField(controller:c,decoration:InputDecoration(labelText:t('dateTarget'),hintText:'YYYY-MM-DD')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,c.text),child:Text(t('save')))]));
     if(d!=null&&d.length>=7){r['deferredTo']=d;r['paid']=false;await persist();if(mounted)setState((){});}
   }
   Future<void> backup() async {
