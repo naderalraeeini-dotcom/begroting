@@ -29,6 +29,63 @@ jobs:
       - name: Generate Android platform files
         run: flutter create . --platforms=android --project-name begroting
 
+      - name: Create distinct Begroting launcher icon
+        shell: bash
+        run: |
+          python3 -m pip install --quiet Pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw, ImageFont
+          root = Path("android/app/src/main/res")
+          sizes = {"mipmap-mdpi":48,"mipmap-hdpi":72,"mipmap-xhdpi":96,"mipmap-xxhdpi":144,"mipmap-xxxhdpi":192}
+          green = (23,63,53,255)
+          gold = (231,197,116,255)
+          cream = (250,247,235,255)
+          for folder,size in sizes.items():
+              d = root / folder
+              d.mkdir(parents=True, exist_ok=True)
+              im = Image.new("RGBA",(size,size),green)
+              draw = ImageDraw.Draw(im)
+              margin = max(2, size//16)
+              draw.rounded_rectangle((margin,margin,size-margin-1,size-margin-1), radius=max(5,size//5), outline=gold, width=max(1,size//24))
+              try:
+                  font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf", int(size*.57))
+              except OSError:
+                  font = ImageFont.load_default()
+              box = draw.textbbox((0,0),"B",font=font,stroke_width=0)
+              x = (size-(box[2]-box[0]))/2 - box[0]
+              y = size*.13 - box[1]
+              draw.text((x,y),"B",font=font,fill=cream)
+              # A small gold savings/finance bar chart makes the identity distinct.
+              base = int(size*.79)
+              bar_w = max(2,size//12)
+              for i,h in enumerate((.10,.17,.25)):
+                  bx = int(size*.34)+i*(bar_w+max(1,size//30))
+                  draw.rounded_rectangle((bx,int(base-size*h),bx+bar_w,base),radius=max(1,size//50),fill=gold)
+              for name in ("ic_launcher.png","ic_launcher_round.png"):
+                  im.save(d/name)
+          # Adaptive Android icons use a transparent foreground over a solid green background.
+          fg = Image.new("RGBA",(432,432),(0,0,0,0))
+          draw = ImageDraw.Draw(fg)
+          try:
+              font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",250)
+          except OSError:
+              font = ImageFont.load_default()
+          box = draw.textbbox((0,0),"B",font=font,stroke_width=0)
+          x = (432-(box[2]-box[0]))/2-box[0]
+          y = 55-box[1]
+          draw.text((x,y),"B",font=font,fill=cream)
+          for i,h in enumerate((42,70,102)):
+              bx = 142+i*48
+              draw.rounded_rectangle((bx,350-h,bx+28,350),radius=6,fill=gold)
+          for folder,size in sizes.items():
+              fg.resize((size*3,size*3),Image.Resampling.LANCZOS).save(root/folder/"ic_launcher_foreground.png")
+          colors = root/"values"/"colors.xml"
+          colors.parent.mkdir(parents=True,exist_ok=True)
+          colors.write_text('''<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#173F35</color>\n</resources>\n''')
+          print("Created custom green-and-gold Begroting icon assets")
+          PY
+
       - name: Set Android compile SDK to 36
         shell: bash
         run: |
