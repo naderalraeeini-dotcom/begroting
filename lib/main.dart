@@ -140,14 +140,90 @@ class _HomePageState extends State<HomePage> {
     try{final d=jsonDecode(utf8.decode(result.files.single.bytes!)) as Map<String,dynamic>;final rs=Map<String,dynamic>.from(d['records']??{});for(final k in records.keys){records[k]=(rs[k] as List? ?? []).map((e)=>Map<String,dynamic>.from(e)).toList();}language=d['language']??language;currency=d['currency']??currency;pin=d['pin']??pin;appLock=d['appLock']??appLock;selectedMonth=d['selectedMonth']??selectedMonth;await persist();if(mounted)setState((){});}catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Invalid backup file')));}
   }
   Future<void> settings() async {
-    String lang=language, curr=currency, newPin=pin;bool lock=appLock;
+    String lang=language, curr=currency; final pinController=TextEditingController(text:pin); bool lock=appLock; String pinError='';
     await showDialog<void>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(title:Text(t('settings')),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
       DropdownButtonFormField<String>(value:lang,decoration:InputDecoration(labelText:t('language')),items:const [DropdownMenuItem(value:'ar',child:Text('العربية')),DropdownMenuItem(value:'nl',child:Text('Nederlands')),DropdownMenuItem(value:'en',child:Text('English'))],onChanged:(v)=>setD(()=>lang=v??'nl')),
       DropdownButtonFormField<String>(value:curr,decoration:InputDecoration(labelText:t('currency')),items:['EUR','USD','GBP','SAR','AED','YER'].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(),onChanged:(v)=>setD(()=>curr=v??'EUR')),
-      TextField(key:ValueKey(newPin),decoration:InputDecoration(labelText:t('pin')),keyboardType:TextInputType.number,maxLength:4,obscureText:true,onChanged:(v)=>newPin=v),
+      TextField(controller:pinController,decoration:InputDecoration(labelText:t('pin'),errorText:pinError.isEmpty?null:pinError),keyboardType:TextInputType.number,maxLength:4,obscureText:true,onChanged:(_){if(pinError.isNotEmpty)setD(()=>pinError='');}),
       SwitchListTile(value:lock,title:Text(t('lock')),onChanged:(v)=>setD(()=>lock=v)),
       Text(t('separate'),style:Theme.of(context).textTheme.bodySmall),
-    ])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:()async{language=lang;currency=curr;pin=newPin.length==4?newPin:'';appLock=lock&&pin.length==4;await persist();if(mounted)setState((){});if(ctx.mounted)Navigator.pop(ctx);},child:Text(t('save')))])));
+    ])),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:()async{final enteredPin=pinController.text.trim();if(lock&&!RegExp(r'^\\d{4}
+  }
+  @override
+  Widget build(BuildContext context) {
+    if(!loaded)return const Scaffold(body:Center(child:CircularProgressIndicator()));
+    final currentKey=tabs[tabIndex];
+    final monthList=months;
+    final inc=totalIncome, exp=totalExpenses;
+    final rtl=language=='ar';
+    return Directionality(textDirection:rtl?TextDirection.rtl:TextDirection.ltr,child:Scaffold(
+      appBar:AppBar(backgroundColor:const Color(0xFF173F35),foregroundColor:Colors.white,title:Row(children:[Container(width:38,height:38,decoration:BoxDecoration(border:Border.all(color:const Color(0xFFD7B76D)),borderRadius:BorderRadius.circular(12)),child:const Center(child:Text('B',style:TextStyle(color:Color(0xFFD7B76D),fontWeight:FontWeight.bold,fontSize:22)))),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('Begroting',style:TextStyle(fontWeight:FontWeight.bold)),Text(slogan,style:const TextStyle(fontSize:12,color:Color(0xFFE9D9A6)))]))]),actions:[IconButton(onPressed:settings,icon:const Icon(Icons.settings))]),
+      body:Column(children:[
+        Padding(padding:const EdgeInsets.all(12),child:Row(children:[Text(t('month')),const SizedBox(width:8),Expanded(child:DropdownButtonFormField<String>(value:monthList.contains(selectedMonth)?selectedMonth:monthList.first,decoration:const InputDecoration(isDense:true,border:OutlineInputBorder()),items:monthList.map((m)=>DropdownMenuItem(value:m,child:Text(m))).toList(),onChanged:(v)async{if(v!=null){setState(()=>selectedMonth=v);await persist();}})),IconButton(onPressed:()async{final d=await showDatePicker(context:context,initialDate:DateTime.now(),firstDate:DateTime(2000),lastDate:DateTime(2100));if(d!=null){setState(()=>selectedMonth=_month(d));await persist();}},icon:const Icon(Icons.add_circle_outline))])),
+        Padding(padding:const EdgeInsets.symmetric(horizontal:12),child:Row(children:[
+          _metric(t('incomeTotal'),money(inc),const Color(0xFFE6F1E8)),
+          const SizedBox(width:8),_metric(t('expenseTotal'),money(exp),const Color(0xFFFFEEE5)),
+          const SizedBox(width:8),_metric(t('balance'),money(inc-exp),const Color(0xFFDDEAE1)),
+        ])),
+        const SizedBox(height:8),
+        SizedBox(height:68,child:ListView(scrollDirection:Axis.horizontal,children:List.generate(tabs.length,(i)=>Padding(padding:const EdgeInsets.symmetric(horizontal:4,vertical:8),child:ChoiceChip(label:Text(t(tabs[i])),selected:tabIndex==i,onSelected:(_)=>setState(()=>tabIndex=i)))))),
+        Expanded(child:currentKey=='statement'?_statement():currentKey=='debts'?_debtList():_recordList(currentKey)),
+      ]),
+      floatingActionButton:currentKey=='statement'?FloatingActionButton.extended(onPressed:backup,icon:const Icon(Icons.backup),label:Text(t('backup'))):FloatingActionButton.extended(onPressed:()=>addRecord(currentKey),icon:const Icon(Icons.add),label:Text(t('add'))),
+    ));
+  }
+  Widget _metric(String title,String value,Color color)=>Expanded(child:Container(padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:color,borderRadius:BorderRadius.circular(14)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontSize:11)),const SizedBox(height:5),FittedBox(fit:BoxFit.scaleDown,child:Text(value,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:14)))])));
+  Widget _recordList(String key) {
+    final list=forMonth(key);
+    if(list.isEmpty)return Center(child:Text(t('empty')));
+    return ListView.builder(padding:const EdgeInsets.fromLTRB(12,4,12,90),itemCount:list.length,itemBuilder:(ctx,i){
+      final r=list[i];final paid=r['paid']==true;final deferred=r['deferredTo']!=null;
+      final amount=(r['amount'] as num?)?.toDouble()??0;
+      final signed=key=='savings'&&r['kind']=='out'?-amount:amount;
+      return Card(color:paid?const Color(0xFFECEFEB):Colors.white,child:Padding(padding:const EdgeInsets.all(12),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        if(['fixed','variable','purchases'].contains(key))Checkbox(value:paid,onChanged:(v)=>togglePaid(key,r,v??false)),
+        Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+          Text(r['name']??'',style:TextStyle(fontWeight:FontWeight.bold,decoration:paid?TextDecoration.lineThrough:null,color:paid?Colors.grey.shade600:null)),
+          if((r['date']??'').toString().isNotEmpty)Text('${t('date')}: ${r['date']}',style:Theme.of(context).textTheme.bodySmall),
+          if((r['note']??'').toString().isNotEmpty)Text(r['note'],style:Theme.of(context).textTheme.bodySmall),
+          if(deferred)Chip(label:Text('${t('deferred')}: ${r['deferredTo']}'),visualDensity:VisualDensity.compact),
+          if(key=='income')Text(t(r['type']??'other'),style:Theme.of(context).textTheme.bodySmall),
+          if(key=='debts')Text('${t('debtRemaining')}: ${money((amount-(r['repaid'] as num? ?? 0)).clamp(0,amount))}'),
+          Wrap(spacing:4,children:[
+            TextButton(onPressed:()=>addRecord(key,r),child:Text(t('edit'))),
+            if(key=='purchases'&&!deferred)TextButton(onPressed:()=>deferPurchase(r),child:Text(t('defer'))),
+            TextButton(onPressed:()=>deleteRecord(key,r),child:Text(t('delete'))),
+          ])
+        ])),
+        const SizedBox(width:8),
+        Text(money(signed),style:TextStyle(fontWeight:FontWeight.bold,color:paid?Colors.grey.shade600:const Color(0xFF245B4B))),
+      ])));
+    });
+  }
+  Widget _debtList() => _recordList('debts');
+  Widget _statement() {
+    final inc=forMonth('income'), fixed=forMonth('fixed'), variable=forMonth('variable');
+    final rows=<Map<String,dynamic>>[...inc.map((r)=>{...r,'group':t('income'),'sign':1}),...fixed.map((r)=>{...r,'group':t('fixed'),'sign':-1}),...variable.map((r)=>{...r,'group':t('variable'),'sign':-1})]..sort((a,b)=>(a['date']??'').compareTo(b['date']??''));
+    return ListView(padding:const EdgeInsets.all(12),children:[
+      Card(child:Padding(padding:const EdgeInsets.all(16),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+        const Text('Begroting',style:TextStyle(fontWeight:FontWeight.bold,fontSize:22,color:Color(0xFF173F35))),
+        Text('$slogan · $selectedMonth'),
+        const Divider(),
+        _statementLine(t('incomeTotal'),money(sum('income'))),
+        _statementLine(t('expenseTotal'),money(sum('fixed')+sum('variable'))),
+        _statementLine(t('balance'),money(totalIncome-totalExpenses),strong:true),
+      ]))),
+      const SizedBox(height:8),
+      ...rows.map((r)=>Card(child:ListTile(title:Text(r['name']??''),subtitle:Text('${r['date']??''} · ${r['group']}'),trailing:Text('${r['sign']==-1?'−':''}${money(r['amount']??0)}',style:const TextStyle(fontWeight:FontWeight.bold))))),
+      const SizedBox(height:8),
+      FilledButton.icon(onPressed:()=>Share.share('Begroting · $selectedMonth\n'+rows.map((r)=>'${r['date']} | ${r['name']} | ${r['group']} | ${money(r['amount']??0)}').join('\n')+'\n'+t('balance')+': ${money(totalIncome-totalExpenses)}'),icon:const Icon(Icons.share),label:Text(t('share'))),
+      OutlinedButton.icon(onPressed:backup,icon:const Icon(Icons.backup),label:Text(t('backup'))),
+      OutlinedButton.icon(onPressed:restore,icon:const Icon(Icons.restore),label:Text(t('restore'))),
+    ]);
+  }
+  Widget _statementLine(String label,String value,{bool strong=false})=>Padding(padding:const EdgeInsets.symmetric(vertical:5),child:Row(mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[Text(label,style:TextStyle(fontWeight:strong?FontWeight.bold:FontWeight.normal)),Text(value,style:TextStyle(fontWeight:FontWeight.bold,fontSize:strong?18:14,color:strong?const Color(0xFF245B4B):null))]));
+}
+).hasMatch(enteredPin)){setD(()=>pinError=lang=='ar'?'أدخل رمزًا من 4 أرقام':lang=='nl'?'Voer precies 4 cijfers in':'Enter exactly 4 digits');return;}language=lang;currency=curr;pin=enteredPin.length==4?enteredPin:'';appLock=lock;await persist();if(mounted)setState((){});if(ctx.mounted)Navigator.pop(ctx);},child:Text(t('save')))])));
   }
   @override
   Widget build(BuildContext context) {
