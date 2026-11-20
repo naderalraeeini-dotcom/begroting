@@ -356,7 +356,7 @@ class _HomePageState extends State<HomePage> {
     const categories = ['income', 'fixed', 'variable', 'debts', 'savings', 'purchases'];
     if (!categories.contains(source)) return;
     if (source == 'debts') {
-      await Share.share('${record['name'] ?? ''}\\n${money((record['amount'] as num?) ?? 0)}\\n${record['date'] ?? ''}\\n${record['note'] ?? ''}', subject: 'Begroting · ${record['name'] ?? ''}');
+      await Share.share('${record['name'] ?? ''}\n${money((record['amount'] as num?) ?? 0)}\n${record['date'] ?? ''}\n${record['note'] ?? ''}', subject: 'Begroting · ${record['name'] ?? ''}');
       return;
     }
     final action = await showModalBottomSheet<String>(context: context, builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -499,8 +499,8 @@ class _HomePageState extends State<HomePage> {
     final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
       title: Text(language == 'ar' ? 'حذف كشف الشهر' : 'Delete monthly statement'),
       content: Text(language == 'ar'
-        ? 'سيتم حذف جميع البنود المسجلة في $month. البنود المؤجلة إلى هذا الشهر ستعود إلى تاريخها الأصلي. لا يمكن التراجع عن هذا الإجراء.'
-        : 'All entries dated in $month will be deleted. Items deferred to this month will return to their original date. This cannot be undone.'),
+        ? 'سيتم حذف بنود الدخل والمصروفات والمشتريات المسجلة في $month فقط. دفتر الديون وسجل سداداته سيبقيان محفوظين دون تغيير. البنود المؤجلة إلى هذا الشهر ستعود إلى تاريخها الأصلي. لا يمكن التراجع عن الحذف.'
+        : 'Income, expense and purchase entries dated in $month will be deleted. The independent debt ledger and its payment history will remain untouched. Deferred items will return to their original date. This cannot be undone.'),
       actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('delete')))],
     ));
     if (confirmed != true || !mounted) return;
@@ -608,7 +608,7 @@ class _HomePageState extends State<HomePage> {
       }
       final r=list[i];final paid=r['paid']==true;final deferred=r['deferredTo']!=null;
       final debtRemaining=key=='debts'?_debtRemainingAsOf(r,selectedMonth):0.0;
-      final debtPayments=key=='debts' && r['payments'] is List ? (r['payments'] as List).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).where((p)=>(p['date']??'').toString().length>=7&&(p['date'] as String).substring(0,7).compareTo(selectedMonth)<=0).toList() : <Map<String,dynamic>>[];
+      final debtPayments=key=='debts' && r['payments'] is List ? (r['payments'] as List).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).where((p)=>(p['date']??'').toString().length>=7&&p['date'].toString().substring(0,7).compareTo(selectedMonth)<=0).toList() : <Map<String,dynamic>>[];
       final amount=(r['amount'] as num?)?.toDouble()??0;
       final signed=key=='savings'&&r['kind']=='out'?-amount:amount;
       final debtColor=key=='debts'
