@@ -139,7 +139,7 @@ class _HomePageState extends State<HomePage> {
               if(name.text.trim().isEmpty){setD(()=>validationError=language=='ar'?'يرجى إدخال البيان':'Please enter a description');return;}
               if(parsedAmount==null || !parsedAmount.isFinite || parsedAmount<0){setD(()=>validationError=language=='ar'?'يرجى إدخال مبلغ صحيح':'Please enter a valid amount');return;}
               final dueValue=dueController.text.trim();
-              if(dueValue.isNotEmpty && !RegExp(r'^\d{4}-\d{2}-\d{2}.hasMatch(dueValue)){setD(()=>validationError=language=='ar'?'صيغة تاريخ الاستحقاق يجب أن تكون YYYY-MM-DD':'Due date must use YYYY-MM-DD');return;}
+              if(dueValue.isNotEmpty && !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dueValue)){setD(()=>validationError=language=='ar'?'صيغة تاريخ الاستحقاق يجب أن تكون YYYY-MM-DD':'Due date must use YYYY-MM-DD');return;}
               Navigator.pop(ctx,{'name':name.text.trim(),'amount':parsedAmount,'note':note.text.trim(),'date':date,'due':dueValue,'type':type,'kind':savingKind});
             },child:Text(t('save')))
           ],
