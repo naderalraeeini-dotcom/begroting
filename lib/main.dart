@@ -801,6 +801,15 @@ class _HomePageState extends State<HomePage> {
             Text('${kind=='receivable'?(language=='ar'?'له':'Receivable'):(language=='ar'?'عليه':'Payable')}: ${money((r['amount'] as num?)??0)} · ${language=='ar'?'المتبقي':'Remaining'}: ${money(_debtRemainingAsOf(r,selectedMonth))}'),
             if((r['note']??'').toString().isNotEmpty)Text(r['note']),
             ...pays.map((p)=>Text('↳ ${language=='ar'?'سداد':'Payment'} ${p['date']??''} · ${money((p['amount'] as num?)??0)}${(p['note']??'').toString().isEmpty?'':' · ${p['note']}'}',style:Theme.of(ctx).textTheme.bodySmall)),
+            Wrap(spacing:4,runSpacing:0,children:[
+              if(_debtRemainingAsOf(r,selectedMonth)>0) TextButton.icon(
+                onPressed:()=>recordDebtPayment(r),icon:const Icon(Icons.payments_outlined,size:16),
+                label:Text(language=='ar'?'تسجيل سداد':'Record payment')),
+              TextButton.icon(onPressed:()=>addRecord('debts',r),icon:const Icon(Icons.edit_outlined,size:16),
+                label:Text(language=='ar'?'تعديل':'Edit')),
+              TextButton.icon(onPressed:()=>deleteRecord('debts',r),icon:const Icon(Icons.delete_outline,size:16),
+                label:Text(language=='ar'?'حذف':'Delete')),
+            ]),
           ])));
         }),
         const Divider(),
