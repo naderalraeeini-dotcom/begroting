@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart' show Text, Navigator;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
@@ -98,64 +97,31 @@ class _HomePageState extends State<HomePage> {
   }
   Future<void> addRecord(String key, [Map<String,dynamic>? existing]) async {
     if (existing != null && !await authorize()) return;
-
-    // Keep every controller alive for the whole dialog. Creating a controller
-    // inside the StatefulBuilder caused it to be replaced on every rebuild.
-    final name = TextEditingController(text: existing?['name']?.toString() ?? '');
+    final name = TextEditingController(text: existing?['name'] ?? '');
     final amount = TextEditingController(text: existing?['amount']?.toString() ?? '');
-    final note = TextEditingController(text: existing?['note']?.toString() ?? '');
-    final dueController = TextEditingController(text: existing?['due']?.toString() ?? '');
-    String date = existing?['date']?.toString() ?? '${selectedMonth}-01';
-    String type = existing?['type']?.toString() ?? 'salary';
-    String savingKind = existing?['kind']?.toString() ?? 'in';
-    String validationError = '';
+    final note = TextEditingController(text: existing?['note'] ?? '');
+    String date = existing?['date'] ?? '${selectedMonth}-01';
+    String due = existing?['due'] ?? '';
+    String type = existing?['type'] ?? 'salary';
+    String savingKind = existing?['kind'] ?? 'in';
     final incomeTypes = ['salary','extra','second','fees','sales','gift','social','refund','debtIncome','partner','family','other'];
-
-    Map<String,dynamic>? res;
-    try {
-      res = await showDialog<Map<String,dynamic>>(
-        context: context,
-        builder: (ctx) => StatefulBuilder(builder: (ctx,setD) => AlertDialog(
-          title: Text(existing == null ? t('add') : t('edit')),
-          content: SingleChildScrollView(child: Column(mainAxisSize:MainAxisSize.min,children:[
-            TextField(controller:name, textInputAction:TextInputAction.next, decoration:InputDecoration(labelText:t('name'))),
-            TextField(controller:amount, textInputAction:TextInputAction.next, keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:false), decoration:InputDecoration(labelText:t('amount'))),
-            TextField(controller:note, textInputAction:TextInputAction.newline, minLines:1, maxLines:3, decoration:InputDecoration(labelText:t('note'))),
-            const SizedBox(height:8),
-            ListTile(contentPadding:EdgeInsets.zero,title:Text('${t('date')}: $date'),trailing:const Icon(Icons.calendar_month),onTap:() async {
-              final parsed = DateTime.tryParse(date);
-              final initial = parsed ?? DateTime.now();
-              final d = await showDatePicker(context:ctx,initialDate:initial.isBefore(DateTime(2000)) || initial.isAfter(DateTime(2100)) ? DateTime.now() : initial,firstDate:DateTime(2000),lastDate:DateTime(2100));
-              if(d != null) setD(() => date='${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}');
-            }),
-            if(key=='income') DropdownButtonFormField<String>(value:type,decoration:InputDecoration(labelText:t('type')),items:incomeTypes.map((x)=>DropdownMenuItem(value:x,child:Text(t(x)))).toList(),onChanged:(v)=>setD(()=>type=v??'salary')),
-            if(key=='savings') DropdownButtonFormField<String>(value:savingKind,items:[DropdownMenuItem(value:'in',child:Text(t('savingsIn'))),DropdownMenuItem(value:'out',child:Text(t('savingsOut')))],onChanged:(v)=>setD(()=>savingKind=v??'in')),
-            if(['fixed','variable','purchases','debts'].contains(key)) TextField(controller:dueController, decoration:InputDecoration(labelText:t('due'),hintText:'YYYY-MM-DD')),
-            if(validationError.isNotEmpty) Padding(padding:const EdgeInsets.only(top:8),child:Text(validationError,style:TextStyle(color:Theme.of(ctx).colorScheme.error))),
-          ])),
-          actions:[
-            TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),
-            FilledButton(onPressed:(){
-              final parsedAmount = double.tryParse(amount.text.trim().replaceAll(',','.'));
-              if(name.text.trim().isEmpty){setD(()=>validationError=language=='ar'?'يرجى إدخال البيان':'Please enter a description');return;}
-              if(parsedAmount==null || !parsedAmount.isFinite || parsedAmount<0){setD(()=>validationError=language=='ar'?'يرجى إدخال مبلغ صحيح':'Please enter a valid amount');return;}
-              final dueValue=dueController.text.trim();
-              if(dueValue.isNotEmpty && !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dueValue)){setD(()=>validationError=language=='ar'?'صيغة تاريخ الاستحقاق يجب أن تكون YYYY-MM-DD':'Due date must use YYYY-MM-DD');return;}
-              Navigator.pop(ctx,{'name':name.text.trim(),'amount':parsedAmount,'note':note.text.trim(),'date':date,'due':dueValue,'type':type,'kind':savingKind});
-            },child:Text(t('save')))
-          ],
-        )),
-      );
-    } finally {
-      name.dispose();
-      amount.dispose();
-      note.dispose();
-      dueController.dispose();
-    }
+    final res = await showDialog<Map<String,dynamic>>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
+      title:Text(existing == null ? t('add') : t('edit')),
+      content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+        TextField(controller:name,decoration:InputDecoration(labelText:t('name'))),
+        TextField(controller:amount,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:InputDecoration(labelText:t('amount'))),
+        TextField(controller:note,decoration:InputDecoration(labelText:t('note'))),
+        const SizedBox(height:8),
+        ListTile(contentPadding:EdgeInsets.zero,title:Text('${t('date')}: $date'),trailing:const Icon(Icons.calendar_month),onTap:()async{final d=await showDatePicker(context:ctx,initialDate:DateTime.tryParse(date)??DateTime.now(),firstDate:DateTime(2000),lastDate:DateTime(2100));if(d!=null)setD(()=>date='${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}');}),
+        if(key=='income') DropdownButtonFormField<String>(value:type,decoration:InputDecoration(labelText:t('type')),items:incomeTypes.map((x)=>DropdownMenuItem(value:x,child:Text(t(x)))).toList(),onChanged:(v)=>setD(()=>type=v??'salary')),
+        if(key=='savings') DropdownButtonFormField<String>(value:savingKind,items:[DropdownMenuItem(value:'in',child:Text(t('savingsIn'))),DropdownMenuItem(value:'out',child:Text(t('savingsOut')))],onChanged:(v)=>setD(()=>savingKind=v??'in')),
+        if(['fixed','variable','purchases','debts'].contains(key)) TextField(decoration:InputDecoration(labelText:t('due'),hintText:'YYYY-MM-DD'),onChanged:(v)=>due=v,controller:TextEditingController(text:due)),
+      ])),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:(){final a=double.tryParse(amount.text.replaceAll(',','.'));if(name.text.trim().isEmpty||a==null||a<0)return;Navigator.pop(ctx,{'name':name.text.trim(),'amount':a,'note':note.text.trim(),'date':date,'due':due,'type':type,'kind':savingKind});},child:Text(t('save')))]
+    )));
     if(res==null)return;
-    if(existing==null){res['id']=_newId();records[key]!.add(res);}else{existing.addAll(res);}
-    await persist();
-    if(mounted)setState((){});
+    if(existing==null){res['id']=DateTime.now().microsecondsSinceEpoch.toString();records[key]!.add(res);}else{existing.addAll(res);}
+    await persist(); if(mounted)setState((){});
   }
   String _newId() => '${DateTime.now().microsecondsSinceEpoch}-${records.values.fold<int>(0,(n,l)=>n+l.length)}';
   void _audit(String action,String source,String target,Map<String,dynamic> r) => auditLog.add({'id':_newId(),'at':DateTime.now().toIso8601String(),'action':action,'source':source,'target':target,'record':Map<String,dynamic>.from(r)});
