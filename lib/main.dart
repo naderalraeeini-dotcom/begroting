@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
@@ -32,6 +33,7 @@ class _HomePageState extends State<HomePage> {
   };
   String language = 'nl', currency = 'EUR', selectedMonth = _month(DateTime.now()), pin = '';
   bool appLock = false;
+  bool _unlocking = false;
   int tabIndex = 0;
   bool loaded = false;
   final List<Map<String,dynamic>> auditLog = [];
@@ -87,9 +89,32 @@ class _HomePageState extends State<HomePage> {
     return set.toList()..sort((a,b)=>b.compareTo(a));
   }
   Future<void> _unlock() async {
-    final c = TextEditingController();
-    final result = await showDialog<bool>(context: context, barrierDismissible:false, builder:(ctx)=>AlertDialog(title:Text(t('lock')),content:TextField(controller:c,keyboardType:TextInputType.number,maxLength:4,obscureText:true,decoration:InputDecoration(labelText:t('pin'))),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,c.text==pin),child:Text(t('ok')))]));
-    if (result != true && mounted) { await Future.delayed(const Duration(milliseconds:400)); _unlock(); }
+    if (_unlocking || !mounted) return;
+    _unlocking = true;
+    final controller = TextEditingController();
+    String error = '';
+    try {
+      await showDialog<void>(context: context, barrierDismissible: false, builder: (ctx) => StatefulBuilder(builder: (ctx, setD) => AlertDialog(
+        title: Text(t('lock')),
+        content: TextField(
+          controller: controller, autofocus: true, keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly], maxLength: 4, obscureText: true,
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(labelText: t('pin'), errorText: error.isEmpty ? null : error),
+          onSubmitted: (_) {
+            if (controller.text == pin && controller.text.length == 4) { Navigator.pop(ctx); }
+            else { setD(() => error = language == 'ar' ? 'الرمز غير صحيح، حاول مرة أخرى' : 'Incorrect PIN. Try again.'); controller.clear(); }
+          },
+        ),
+        actions: [FilledButton(onPressed: () {
+          if (controller.text == pin && controller.text.length == 4) { Navigator.pop(ctx); }
+          else { setD(() => error = language == 'ar' ? 'الرمز غير صحيح، حاول مرة أخرى' : 'Incorrect PIN. Try again.'); controller.clear(); }
+        }, child: Text(t('ok')))],
+      )));
+    } finally {
+      controller.dispose();
+      _unlocking = false;
+    }
   }
   Future<bool> authorize() async {
     final ok = await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:Text(t('security')),content:Text(t('confirm')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:Text(t('cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:Text(t('ok')))]));
@@ -129,7 +154,24 @@ class _HomePageState extends State<HomePage> {
             }),
             if(key=='income') DropdownButtonFormField<String>(value:type,decoration:InputDecoration(labelText:t('type')),items:incomeTypes.map((x)=>DropdownMenuItem(value:x,child:Text(t(x)))).toList(),onChanged:(v)=>setD(()=>type=v??'salary')),
             if(key=='savings') DropdownButtonFormField<String>(value:savingKind,items:[DropdownMenuItem(value:'in',child:Text(t('savingsIn'))),DropdownMenuItem(value:'out',child:Text(t('savingsOut')))],onChanged:(v)=>setD(()=>savingKind=v??'in')),
-            if(['fixed','variable','purchases','debts'].contains(key)) TextField(controller:dueController, decoration:InputDecoration(labelText:t('due'),hintText:'YYYY-MM-DD')),
+            if(['fixed','variable','purchases','debts'].contains(key)) ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(dueController.text.isEmpty ? t('due') : '${t('due')}: ${dueController.text}'),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (dueController.text.isNotEmpty) IconButton(icon: const Icon(Icons.clear), onPressed: () => setD(() => dueController.clear())),
+                const Icon(Icons.event),
+              ]),
+              onTap: () async {
+                final parsedDue = DateTime.tryParse(dueController.text);
+                final initialDue = parsedDue ?? DateTime.now();
+                final pickedDue = await showDatePicker(
+                  context: ctx,
+                  initialDate: initialDue.isBefore(DateTime(2000)) || initialDue.isAfter(DateTime(2100)) ? DateTime.now() : initialDue,
+                  firstDate: DateTime(2000), lastDate: DateTime(2100),
+                );
+                if (pickedDue != null) setD(() => dueController.text = '${pickedDue.year}-${pickedDue.month.toString().padLeft(2,'0')}-${pickedDue.day.toString().padLeft(2,'0')}');
+              },
+            ),
             if(validationError.isNotEmpty) Padding(padding:const EdgeInsets.only(top:8),child:Text(validationError,style:TextStyle(color:Theme.of(ctx).colorScheme.error))),
           ])),
           actions:[
@@ -139,7 +181,7 @@ class _HomePageState extends State<HomePage> {
               if(name.text.trim().isEmpty){setD(()=>validationError=language=='ar'?'يرجى إدخال البيان':'Please enter a description');return;}
               if(parsedAmount==null || !parsedAmount.isFinite || parsedAmount<0){setD(()=>validationError=language=='ar'?'يرجى إدخال مبلغ صحيح':'Please enter a valid amount');return;}
               final dueValue=dueController.text.trim();
-              if(dueValue.isNotEmpty && !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dueValue)){setD(()=>validationError=language=='ar'?'صيغة تاريخ الاستحقاق يجب أن تكون YYYY-MM-DD':'Due date must use YYYY-MM-DD');return;}
+              if(dueValue.isNotEmpty && (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dueValue) || DateTime.tryParse(dueValue)==null || DateTime.tryParse(dueValue)!.toIso8601String().substring(0,10)!=dueValue)){setD(()=>validationError=language=='ar'?'تاريخ الاستحقاق غير صحيح':'Please enter a valid due date');return;}
               Navigator.pop(ctx,{'name':name.text.trim(),'amount':parsedAmount,'note':note.text.trim(),'date':date,'due':dueValue,'type':type,'kind':savingKind});
             },child:Text(t('save')))
           ],
@@ -158,39 +200,112 @@ class _HomePageState extends State<HomePage> {
   }
   String _newId() => '${DateTime.now().microsecondsSinceEpoch}-${records.values.fold<int>(0,(n,l)=>n+l.length)}';
   void _audit(String action,String source,String target,Map<String,dynamic> r) => auditLog.add({'id':_newId(),'at':DateTime.now().toIso8601String(),'action':action,'source':source,'target':target,'record':Map<String,dynamic>.from(r)});
-  Future<void> copyPreviousMonthItems(String targetMonth) async {
-    final p=targetMonth.split('-');final d=DateTime(int.parse(p[0]),int.parse(p[1]),1);final prev=_month(DateTime(d.year,d.month-1,1));
-    final items=<Map<String,dynamic>>[];
-    for(final k in ['income','fixed']){for(final r in records[k]!.where((x)=>monthOf(x)==prev)){items.add({'key':k,'record':r,'selected':true});}}
-    if(items.isEmpty)return;
-    final chosen=await showDialog<List<int>>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
-      title:Text(language=='ar'?'نسخ بنود من الشهر السابق':'Copy previous month items'),
-      content:SizedBox(width:double.maxFinite,child:Column(mainAxisSize:MainAxisSize.min,children:[
-        Wrap(children:[TextButton(onPressed:()=>setD(()=>items.forEach((x)=>x['selected']=true)),child:Text(language=='ar'?'تحديد الكل':'Select all')),TextButton(onPressed:()=>setD(()=>items.forEach((x)=>x['selected']=false)),child:Text(language=='ar'?'إلغاء الكل':'Clear all'))]),
-        Flexible(child:ListView(shrinkWrap:true,children:List.generate(items.length,(i){final x=items[i];final r=x['record'] as Map<String,dynamic>;return CheckboxListTile(value:x['selected'] as bool,title:Text(r['name']??''),subtitle:Text('${t(x['key'] as String)} · ${money((r['amount'] as num?)??0)}'),onChanged:(v)=>setD(()=>x['selected']=v??false));})))
-      ])),
-      actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,List.generate(items.length,(i)=>i).where((i)=>items[i]['selected']==true).toList()),child:Text(language=='ar'?'نسخ المحدد':'Copy selected'))]
+  Future<void> createMonthFlow() async {
+    final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
+    if (picked == null || !mounted) return;
+    final targetMonth = _month(picked);
+    if (targetMonth == selectedMonth) return;
+    final previousMonth = _month(DateTime(picked.year, picked.month - 1, 1));
+    final hasIncome = records['income']!.any((r) => monthOf(r) == previousMonth);
+    final hasFixed = records['fixed']!.any((r) => monthOf(r) == previousMonth);
+    bool copyIncome = hasIncome, copyFixed = hasFixed;
+    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setD) => AlertDialog(
+      title: Text(language == 'ar' ? 'إنشاء كشف شهر جديد' : 'Create a new monthly statement'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(language == 'ar' ? 'اختر القوائم التي تريد تكرارها من الشهر السابق:' : 'Choose which lists to copy from the previous month:'),
+        CheckboxListTile(contentPadding: EdgeInsets.zero, value: copyIncome, onChanged: hasIncome ? (v) => setD(() => copyIncome = v ?? false) : null, title: Text(t('income')), subtitle: hasIncome ? null : Text(language == 'ar' ? 'لا توجد بيانات في الشهر السابق' : 'No entries in previous month')),
+        CheckboxListTile(contentPadding: EdgeInsets.zero, value: copyFixed, onChanged: hasFixed ? (v) => setD(() => copyFixed = v ?? false) : null, title: Text(language == 'ar' ? 'الالتزامات الثابتة' : language == 'nl' ? 'Vaste verplichtingen' : 'Fixed obligations'), subtitle: hasFixed ? null : Text(language == 'ar' ? 'لا توجد بيانات في الشهر السابق' : 'No entries in previous month')),
+        Text('\${language == 'ar' ? 'الشهر الجديد:' : 'New month:'} $targetMonth'),
+      ]),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(language == 'ar' ? 'إنشاء الكشف' : 'Create statement'))],
     )));
-    if(chosen==null){if(mounted)setState(()=>selectedMonth=targetMonth);await persist();return;}
-    for(final i in chosen){final x=items[i];final k=x['key'] as String;final old=x['record'] as Map<String,dynamic>;final day=(old['date']??'$targetMonth-01').toString().substring(8,10);final c=Map<String,dynamic>.from(old)..['id']=_newId()..['date']='$targetMonth-$day';if(c.containsKey('paid'))c['paid']=false;c.remove('deferredTo');records[k]!.add(c);_audit('monthly_copy',k,k,c);}
-    await persist();if(mounted)setState(()=>selectedMonth=targetMonth);
+    if (confirmed != true || !mounted) return;
+    await copyPreviousMonthItems(targetMonth, [if (copyIncome) 'income', if (copyFixed) 'fixed']);
   }
-  Future<void> itemActions(String source,Map<String,dynamic> r) async {
-    if(!['income','fixed','variable','debts'].contains(source))return;
-    final action=await showModalBottomSheet<String>(context:context,builder:(ctx)=>SafeArea(child:Column(mainAxisSize:MainAxisSize.min,children:[
-      ListTile(leading:const Icon(Icons.copy),title:Text(language=='ar'?'نسخ البيان':'Copy item'),onTap:()=>Navigator.pop(ctx,'copy')),
-      ListTile(leading:const Icon(Icons.drive_file_move),title:Text(language=='ar'?'نقل البيان':'Move item'),onTap:()=>Navigator.pop(ctx,'move')),
-      ListTile(leading:const Icon(Icons.category),title:Text(language=='ar'?'تغيير التصنيف':'Change category'),onTap:()=>Navigator.pop(ctx,'category'))
+
+  Future<void> copyPreviousMonthItems(String targetMonth, List<String> categories) async {
+    final parts = targetMonth.split('-');
+    final first = DateTime(int.parse(parts[0]), int.parse(parts[1]), 1);
+    final previousMonth = _month(DateTime(first.year, first.month - 1, 1));
+    final items = <Map<String, dynamic>>[];
+    for (final key in categories) {
+      for (final record in records[key]!.where((r) => monthOf(r) == previousMonth)) {
+        items.add({'key': key, 'record': record, 'selected': true});
+      }
+    }
+    if (items.isEmpty) {
+      if (mounted) setState(() => selectedMonth = targetMonth);
+      await persist();
+      return;
+    }
+    final chosen = await showDialog<List<int>>(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx, setD) => AlertDialog(
+      title: Text(language == 'ar' ? 'حدد البنود المراد تكرارها' : 'Select items to copy'),
+      content: SizedBox(width: double.maxFinite, child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Wrap(children: [
+          TextButton(onPressed: () => setD(() => items.forEach((x) => x['selected'] = true)), child: Text(language == 'ar' ? 'تحديد الكل' : 'Select all')),
+          TextButton(onPressed: () => setD(() => items.forEach((x) => x['selected'] = false)), child: Text(language == 'ar' ? 'إلغاء الكل' : 'Clear all')),
+        ]),
+        Flexible(child: ListView(shrinkWrap: true, children: List.generate(items.length, (i) {
+          final item = items[i], record = item['record'] as Map<String, dynamic>;
+          return CheckboxListTile(value: item['selected'] as bool, title: Text(record['name']?.toString() ?? ''), subtitle: Text('\${t(item['key'] as String)} · \${money((record['amount'] as num?) ?? 0)}'), onChanged: (v) => setD(() => item['selected'] = v ?? false));
+        }))),
+      ])),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('cancel'))),
+        FilledButton(onPressed: () => Navigator.pop(ctx, List.generate(items.length, (i) => i).where((i) => items[i]['selected'] == true).toList()), child: Text(language == 'ar' ? 'نسخ المحدد' : 'Copy selected')),
+      ],
+    )));
+    if (chosen == null) return;
+    for (final index in chosen) {
+      final item = items[index], key = item['key'] as String, old = item['record'] as Map<String, dynamic>;
+      final oldDate = (old['date'] ?? '$targetMonth-01').toString();
+      final day = oldDate.length >= 10 ? oldDate.substring(8, 10) : '01';
+      final copy = Map<String, dynamic>.from(old)..['id'] = _newId()..['date'] = '$targetMonth-$day';
+      if (copy.containsKey('paid')) copy['paid'] = false;
+      copy.remove('deferredTo');
+      records[key]!.add(copy);
+      _audit('monthly_copy', key, key, copy);
+    }
+    if (mounted) setState(() => selectedMonth = targetMonth);
+    await persist();
+  }
+
+  Future<void> itemActions(String source, Map<String, dynamic> record) async {
+    const categories = ['income', 'fixed', 'variable', 'debts', 'savings', 'purchases'];
+    if (!categories.contains(source)) return;
+    final action = await showModalBottomSheet<String>(context: context, builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      ListTile(leading: const Icon(Icons.copy), title: Text(language == 'ar' ? 'نسخ إلى قائمة أخرى' : 'Copy to another list'), onTap: () => Navigator.pop(ctx, 'copy')),
+      ListTile(leading: const Icon(Icons.drive_file_move), title: Text(language == 'ar' ? 'نقل إلى قائمة أخرى' : 'Move to another list'), onTap: () => Navigator.pop(ctx, 'move')),
+      ListTile(leading: const Icon(Icons.category), title: Text(language == 'ar' ? 'تغيير القائمة' : 'Change list'), onTap: () => Navigator.pop(ctx, 'reclassify')),
+      ListTile(leading: const Icon(Icons.share), title: Text(t('share')), onTap: () => Navigator.pop(ctx, 'share')),
     ])));
-    if(action==null||!mounted)return;
-    final cats=['income','fixed','variable','debts'];
-    final target=await showDialog<String>(context:context,builder:(ctx)=>AlertDialog(title:Text(language=='ar'?'اختر التصنيف':'Choose category'),content:Column(mainAxisSize:MainAxisSize.min,children:cats.where((k)=>action=='copy'||k!=source).map((k)=>ListTile(title:Text(t(k)),onTap:()=>Navigator.pop(ctx,k))).toList()),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel')))]));
-    if(target==null||!await authorize())return;
-    final snapshot=Map<String,dynamic>.from(r);
-    if(action=='copy'){final c=Map<String,dynamic>.from(r)..['id']=_newId();records[target]!.add(c);_audit('copy',source,target,c);}
-    else{records[source]!.removeWhere((x)=>x['id']==r['id']);final c=Map<String,dynamic>.from(r)..['id']=_newId();records[target]!.add(c);_audit(action=='move'?'move':'reclassify',source,target,snapshot);}
-    await persist();if(mounted)setState((){});
+    if (action == null || !mounted) return;
+    final description = '\${record['name'] ?? ''}\n\${money((record['amount'] as num?) ?? 0)}\n\${record['date'] ?? ''}\n\${record['note'] ?? ''}';
+    if (action == 'share') {
+      await Share.share(description, subject: 'Begroting · \${record['name'] ?? ''}');
+      return;
+    }
+    final targets = categories.where((key) => action == 'copy' || key != source).toList();
+    final target = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
+      title: Text(language == 'ar' ? 'اختر القائمة المستهدفة' : 'Choose destination list'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: targets.map((key) => ListTile(title: Text(key == 'fixed' && language == 'ar' ? 'الالتزامات الثابتة' : t(key)), onTap: () => Navigator.pop(ctx, key))).toList()),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(t('cancel')))],
+    ));
+    if (target == null || !await authorize()) return;
+    final snapshot = Map<String, dynamic>.from(record);
+    final transferred = Map<String, dynamic>.from(record)..['id'] = _newId();
+    if (action == 'copy') {
+      records[target]!.add(transferred);
+      _audit('copy', source, target, transferred);
+    } else {
+      records[source]!.removeWhere((item) => item['id'] == record['id']);
+      records[target]!.add(transferred);
+      _audit(action == 'move' ? 'move' : 'reclassify', source, target, snapshot);
+    }
+    await persist();
+    if (mounted) setState(() {});
   }
+
   Future<void> togglePaid(String key, Map<String,dynamic> r, bool value) async { if(!await authorize())return; r['paid']=value; await persist(); if(mounted)setState((){}); }
   Future<void> deleteRecord(String key, Map<String,dynamic> r) async { if(!await authorize())return; final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(content:Text(t('deleteAsk')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:Text(t('cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:Text(t('delete')))])); if(ok==true){records[key]!.removeWhere((x)=>x['id']==r['id']);await persist();if(mounted)setState((){});} }
   Future<void> deferPurchase(Map<String,dynamic> r) async {
@@ -292,6 +407,42 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
+  Future<void> deleteSelectedMonth() async {
+    final month = selectedMonth;
+    if (!await authorize() || !mounted) return;
+    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: Text(language == 'ar' ? 'حذف كشف الشهر' : 'Delete monthly statement'),
+      content: Text(language == 'ar'
+        ? 'سيتم حذف جميع البنود المسجلة في $month. البنود المؤجلة إلى هذا الشهر ستعود إلى تاريخها الأصلي. لا يمكن التراجع عن هذا الإجراء.'
+        : 'All entries dated in $month will be deleted. Items deferred to this month will return to their original date. This cannot be undone.'),
+      actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('cancel'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(t('delete')))],
+    ));
+    if (confirmed != true || !mounted) return;
+    var deleted = 0;
+    for (final entry in records.entries) {
+      entry.value.removeWhere((record) {
+        final date = (record['date'] ?? '').toString();
+        final remove = date.length >= 7 && date.substring(0, 7) == month;
+        if (remove) deleted++;
+        return remove;
+      });
+    }
+    for (final purchase in records['purchases']!) {
+      if ((purchase['deferredTo'] ?? '').toString().startsWith(month)) {
+        purchase.remove('deferredTo');
+        purchase['paid'] = false;
+      }
+    }
+    _audit('delete_month', 'all', 'all', {'month': month, 'deletedCount': deleted});
+    final remaining = months.where((m) => m != month).toList();
+    selectedMonth = remaining.isNotEmpty ? remaining.first : _month(DateTime.now());
+    await persist();
+    if (mounted) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(language == 'ar' ? 'تم حذف كشف الشهر' : 'Monthly statement deleted')));
+    }
+  }
+
   Future<void> settings() async {
     String lang=language, curr=currency;
     final pinController=TextEditingController(text:pin);
@@ -302,15 +453,17 @@ class _HomePageState extends State<HomePage> {
       content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
         DropdownButtonFormField<String>(value:lang,decoration:InputDecoration(labelText:t('language')),items:const [DropdownMenuItem(value:'ar',child:Text('العربية')),DropdownMenuItem(value:'nl',child:Text('Nederlands')),DropdownMenuItem(value:'en',child:Text('English'))],onChanged:(v)=>setD(()=>lang=v??'nl')),
         DropdownButtonFormField<String>(value:curr,decoration:InputDecoration(labelText:t('currency')),items:['EUR','USD','GBP','SAR','AED','YER'].map((v)=>DropdownMenuItem(value:v,child:Text(v))).toList(),onChanged:(v)=>setD(()=>curr=v??'EUR')),
-        TextField(controller:pinController,decoration:InputDecoration(labelText:t('pin'),errorText:pinError.isEmpty?null:pinError),keyboardType:TextInputType.number,maxLength:4,obscureText:true,onChanged:(_){if(pinError.isNotEmpty)setD(()=>pinError='');}),
+        TextField(controller:pinController,decoration:InputDecoration(labelText:t('pin'),errorText:pinError.isEmpty?null:pinError),keyboardType:TextInputType.number,inputFormatters:[FilteringTextInputFormatter.digitsOnly],maxLength:4,obscureText:true,onChanged:(_){if(pinError.isNotEmpty)setD(()=>pinError='');}),
         SwitchListTile(value:lock,title:Text(t('lock')),onChanged:(v)=>setD(()=>lock=v)),
         Text(t('separate'),style:Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 12),
+        ListTile(dense:true,contentPadding:EdgeInsets.zero,leading:const Icon(Icons.delete_forever,color:Colors.red),title:Text(language=='ar'?'حذف كشف الشهر الحالي':'Delete current month'),subtitle:Text(selectedMonth),onTap:() async { Navigator.pop(ctx); await deleteSelectedMonth(); }),
       ])),
       actions:[
         TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),
         FilledButton(onPressed:()async{
           final enteredPin=pinController.text.trim();
-          if(lock&&!RegExp(r'^\\d{4}$').hasMatch(enteredPin)){
+          if(lock&&!RegExp(r'^\d{4}$').hasMatch(enteredPin)){
             setD(()=>pinError=lang=='ar'?'أدخل رمزًا من 4 أرقام':lang=='nl'?'Voer precies 4 cijfers in':'Enter exactly 4 digits');
             return;
           }
@@ -333,7 +486,7 @@ class _HomePageState extends State<HomePage> {
     return Directionality(textDirection:rtl?TextDirection.rtl:TextDirection.ltr,child:Scaffold(
       appBar:AppBar(backgroundColor:const Color(0xFF173F35),foregroundColor:Colors.white,title:Row(children:[Container(width:38,height:38,decoration:BoxDecoration(border:Border.all(color:const Color(0xFFD7B76D)),borderRadius:BorderRadius.circular(12)),child:const Center(child:Text('B',style:TextStyle(color:Color(0xFFD7B76D),fontWeight:FontWeight.bold,fontSize:22)))),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('Begroting',style:TextStyle(fontWeight:FontWeight.bold)),Text(slogan,style:const TextStyle(fontSize:12,color:Color(0xFFE9D9A6)))]))]),actions:[IconButton(onPressed:settings,icon:const Icon(Icons.settings))]),
       body:Column(children:[
-        Padding(padding:const EdgeInsets.all(12),child:Row(children:[Text(t('month')),const SizedBox(width:8),Expanded(child:DropdownButtonFormField<String>(value:monthList.contains(selectedMonth)?selectedMonth:monthList.first,decoration:const InputDecoration(isDense:true,border:OutlineInputBorder()),items:monthList.map((m)=>DropdownMenuItem(value:m,child:Text(m))).toList(),onChanged:(v)async{if(v!=null){setState(()=>selectedMonth=v);await persist();}})),IconButton(onPressed:()async{final d=await showDatePicker(context:context,initialDate:DateTime.now(),firstDate:DateTime(2000),lastDate:DateTime(2100));if(d!=null){final target=_month(d);final prev=_month(DateTime(d.year,d.month-1,1));final has=records['income']!.any((r)=>monthOf(r)==prev)||records['fixed']!.any((r)=>monthOf(r)==prev);if(has){await copyPreviousMonthItems(target);}else{setState(()=>selectedMonth=target);await persist();}}},icon:const Icon(Icons.add_circle_outline))])),
+        Padding(padding:const EdgeInsets.all(12),child:Row(children:[Text(t('month')),const SizedBox(width:8),Expanded(child:DropdownButtonFormField<String>(value:monthList.contains(selectedMonth)?selectedMonth:monthList.first,decoration:const InputDecoration(isDense:true,border:OutlineInputBorder()),items:monthList.map((m)=>DropdownMenuItem(value:m,child:Text(m))).toList(),onChanged:(v)async{if(v!=null){setState(()=>selectedMonth=v);await persist();}})),IconButton(tooltip:language=='ar'?'إنشاء كشف شهر جديد':'Create new month',onPressed:createMonthFlow,icon:const Icon(Icons.add_circle_outline))])),
         Padding(padding:const EdgeInsets.symmetric(horizontal:12),child:Row(children:[
           _metric(t('incomeTotal'),money(inc),const Color(0xFFE6F1E8)),
           const SizedBox(width:8),_metric(t('expenseTotal'),money(exp),const Color(0xFFFFEEE5)),
@@ -355,7 +508,7 @@ class _HomePageState extends State<HomePage> {
       final r=list[i];final paid=r['paid']==true;final deferred=r['deferredTo']!=null;
       final amount=(r['amount'] as num?)?.toDouble()??0;
       final signed=key=='savings'&&r['kind']=='out'?-amount:amount;
-      return GestureDetector(onLongPressStart:(_){_holdTimer?.cancel();_holdTimer=Timer(const Duration(seconds:3),(){if(mounted)itemActions(key,r);});},onLongPressEnd:(_)=>_holdTimer?.cancel(),onLongPressCancel:()=>_holdTimer?.cancel(),child:Card(color:paid?const Color(0xFFECEFEB):Colors.white,child:Padding(padding:const EdgeInsets.all(12),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      return Card(color:paid?const Color(0xFFECEFEB):Colors.white,child:Padding(padding:const EdgeInsets.all(12),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
         if(['fixed','variable','purchases'].contains(key))Checkbox(value:paid,onChanged:(v)=>togglePaid(key,r,v??false)),
         Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text(r['name']??'',style:TextStyle(fontWeight:FontWeight.bold,decoration:paid?TextDecoration.lineThrough:null,color:paid?Colors.grey.shade600:null)),
@@ -371,7 +524,7 @@ class _HomePageState extends State<HomePage> {
           ])
         ])),
         const SizedBox(width:8),
-        Text(money(signed),style:TextStyle(fontWeight:FontWeight.bold,color:paid?Colors.grey.shade600:const Color(0xFF245B4B))),
+        Column(mainAxisSize:MainAxisSize.min,children:[Text(money(signed),style:TextStyle(fontWeight:FontWeight.bold,color:paid?Colors.grey.shade600:const Color(0xFF245B4B))),if(['income','fixed','variable','debts','savings','purchases'].contains(key)) IconButton(tooltip:language=='ar'?'نسخ أو نقل أو مشاركة':'Copy, move or share',onPressed:()=>itemActions(key,r),icon:const Icon(Icons.more_vert))]),
       ]))));
     });
   }
