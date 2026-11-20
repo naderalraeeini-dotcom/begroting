@@ -216,18 +216,23 @@ jobs:
           "$AAPT" dump badging "$APK" | tee "$RUNNER_TEMP/apk-badging.txt"
           grep -q "package: name='com.example.begroting'" "$RUNNER_TEMP/apk-badging.txt"
           grep -q "versionCode='$GITHUB_RUN_NUMBER'" "$RUNNER_TEMP/apk-badging.txt"
-          keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" > "$RUNNER_TEMP/keystore-cert.txt"
+          keytool -exportcert -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" | openssl x509 -noout -fingerprint -sha256 > "$RUNNER_TEMP/keystore-fingerprint.txt"
           python3 - <<'PY'
           from pathlib import Path
           import os, re
           temp = Path(os.environ["RUNNER_TEMP"])
           apk = (temp / "apk-signature.txt").read_text()
-          cert = (temp / "keystore-cert.txt").read_text()
+          cert = (temp / "keystore-fingerprint.txt").read_text()
           def normalize(value):
               return re.sub(r"[^0-9A-F]", "", value.upper())
           a = re.search(r"Signer #1 certificate SHA-256 digest: ([0-9a-fA-F:]+)", apk)
-          b = re.search(r"SHA256: ([0-9a-fA-F:]+)", cert)
-          if not a or not b or normalize(a.group(1)) != normalize(b.group(1)):
+          b = re.search(r"SHA256 Fingerprint=([0-9a-fA-F:]+)", cert)
+          if not a or not b:
+              raise SystemExit("Could not extract APK and keystore certificate fingerprints")
+          apk_fp, key_fp = normalize(a.group(1)), normalize(b.group(1))
+          print(f"APK certificate SHA-256: {apk_fp}")
+          print(f"Keystore certificate SHA-256: {key_fp}")
+          if apk_fp != key_fp:
               raise SystemExit("APK certificate does not match permanent upload keystore")
           print("APK identity, build number, and signing certificate verified")
           PY
