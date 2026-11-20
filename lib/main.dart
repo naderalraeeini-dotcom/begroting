@@ -27,7 +27,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final String storageKey = 'begroting_data_v1';
-  final List<String> tabs = ['income','fixed','variable','debts','savings','purchases','statement'];
+  final List<String> tabs = ['income','fixed','variable','debts','savings','purchases','analytics','statement'];
   final Map<String, List<Map<String,dynamic>>> records = {
     'income': [], 'fixed': [], 'variable': [], 'debts': [], 'savings': [], 'purchases': []
   };
@@ -41,9 +41,9 @@ class _HomePageState extends State<HomePage> {
 
   static String _month(DateTime d) => '${d.year}-${d.month.toString().padLeft(2,'0')}';
   Map<String,String> get labels {
-    const ar = {'income':'الدخل','fixed':'الالتزامات الثابتة','variable':'المصروفات المتغيرة','debts':'الديون','savings':'دفتر الادخار','purchases':'المشتريات','statement':'كشف الحساب','add':'إضافة بيان','name':'البيان / الاسم','amount':'المبلغ','date':'التاريخ','note':'ملاحظات','save':'حفظ','cancel':'إلغاء','paid':'مسدد','unpaid':'غير مسدد','edit':'تعديل','delete':'حذف','settings':'الإعدادات','language':'اللغة','currency':'العملة','backup':'نسخة احتياطية','restore':'استعادة نسخة','month':'الشهر','balance':'الرصيد الشهري','incomeTotal':'إجمالي الدخل','expenseTotal':'إجمالي المصروفات','type':'نوع الدخل','due':'تاريخ الاستحقاق','defer':'ترحيل','deferred':'بند مؤجل','next':'الشهر القادم','dateTarget':'تاريخ محدد','share':'مشاركة','empty':'لا توجد بيانات لهذا الشهر','lock':'قفل التطبيق','pin':'رمز من 4 أرقام','confirm':'هل تريد المتابعة؟','ok':'موافق','error':'يرجى التحقق من البيانات','partner':'راتب الشريك','family':'راتب فرد في العائلة','salary':'راتب','extra':'راتب إضافي','second':'دخل عمل إضافي','fees':'أتعاب خدمات','sales':'مبيعات','gift':'هدية','social':'الضمان الاجتماعي','refund':'مبالغ مستردة','debtIncome':'دين مستلم','other':'أخرى','savingsIn':'إيداع ادخار','savingsOut':'سحب من الادخار','security':'تأكيد التعديل','tap':'موافق فقط','pinAuth':'رمز التحقق','deleteAsk':'حذف هذا البيان؟','debtRemaining':'المتبقي','separate':'دفتر الادخار مستقل ولا يدخل في إجمالي الدخل والمصروفات.'};
-    const nl = {'income':'Inkomsten','fixed':'Vaste verplichtingen','variable':'Variabele uitgaven','debts':'Schulden','savings':'Spaarboek','purchases':'Toekomstige aankopen','statement':'Overzicht','add':'Item toevoegen','name':'Naam / omschrijving','amount':'Bedrag','date':'Datum','note':'Notities','save':'Opslaan','cancel':'Annuleren','paid':'Betaald','unpaid':'Openstaand','edit':'Bewerken','delete':'Verwijderen','settings':'Instellingen','language':'Taal','currency':'Valuta','backup':'Back-up maken','restore':'Back-up herstellen','month':'Maand','balance':'Maandsaldo','incomeTotal':'Totale inkomsten','expenseTotal':'Totale uitgaven','type':'Inkomstensoort','due':'Vervaldatum','defer':'Uitstellen','deferred':'Uitgesteld','next':'Volgende maand','dateTarget':'Specifieke datum','share':'Delen','empty':'Geen gegevens voor deze maand','lock':'App-vergrendeling','pin':'Pincode van 4 cijfers','confirm':'Doorgaan?','ok':'OK','error':'Controleer de gegevens','partner':'Salaris partner','family':'Salaris familielid','salary':'Salaris','extra':'Extra salaris','second':'Bijbaan','fees':'Dienstverlening','sales':'Verkoop','gift':'Cadeau','social':'Sociale uitkering','refund':'Terugbetaling','debtIncome':'Ontvangen lening','other':'Overig','savingsIn':'Spaarstorting','savingsOut':'Spaaropname','security':'Bewerkingsbevestiging','tap':'Alleen OK','pinAuth':'Pincode','deleteAsk':'Dit item verwijderen?','debtRemaining':'Resterend','separate':'Het spaarboek telt niet mee in inkomsten of uitgaven.'};
-    const en = {'income':'Income','fixed':'Fixed obligations','variable':'Variable expenses','debts':'Debts','savings':'Savings ledger','purchases':'Future purchases','statement':'Statement','add':'Add item','name':'Name / description','amount':'Amount','date':'Date','note':'Notes','save':'Save','cancel':'Cancel','paid':'Paid','unpaid':'Unpaid','edit':'Edit','delete':'Delete','settings':'Settings','language':'Language','currency':'Currency','backup':'Create backup','restore':'Restore backup','month':'Month','balance':'Monthly balance','incomeTotal':'Total income','expenseTotal':'Total expenses','type':'Income type','due':'Due date','defer':'Defer','deferred':'Deferred item','next':'Next month','dateTarget':'Specific date','share':'Share','empty':'No entries for this month','lock':'App lock','pin':'4-digit PIN','confirm':'Continue?','ok':'OK','error':'Check the entered values','partner':'Partner salary','family':'Family member salary','salary':'Salary','extra':'Extra salary','second':'Secondary job','fees':'Service fees','sales':'Sales','gift':'Gift','social':'Social security','refund':'Refunds','debtIncome':'Debt received','other':'Other','savingsIn':'Savings deposit','savingsOut':'Savings withdrawal','security':'Edit confirmation','tap':'Tap OK only','pinAuth':'PIN','deleteAsk':'Delete this item?','debtRemaining':'Remaining','separate':'Savings are separate and excluded from income/expense totals.'};
+    const ar = {'income':'الدخل','fixed':'الالتزامات الثابتة','variable':'المصروفات المتغيرة','debts':'الديون','savings':'دفتر الادخار','purchases':'المشتريات','statement':'كشف الحساب','analytics':'التحليل والمؤشرات','costCenter':'مركز التكلفة','incomeRecurring':'الدخل المتكرر','expenseRecurring':'المصروفات المتكررة','centers':'مراكز التكلفة','monthCompare':'مقارنة الأشهر','debtAnalysis':'تحليل الديون','savingsAnalysis':'تحليل الادخار','previousMonth':'الشهر السابق','occurrences':'أشهر التكرار','periodTotal':'إجمالي الفترة','add':'إضافة بيان','name':'البيان / الاسم','amount':'المبلغ','date':'التاريخ','note':'ملاحظات','save':'حفظ','cancel':'إلغاء','paid':'مسدد','unpaid':'غير مسدد','edit':'تعديل','delete':'حذف','settings':'الإعدادات','language':'اللغة','currency':'العملة','backup':'نسخة احتياطية','restore':'استعادة نسخة','month':'الشهر','balance':'الرصيد الشهري','incomeTotal':'إجمالي الدخل','expenseTotal':'إجمالي المصروفات','type':'نوع الدخل','due':'تاريخ الاستحقاق','defer':'ترحيل','deferred':'بند مؤجل','next':'الشهر القادم','dateTarget':'تاريخ محدد','share':'مشاركة','empty':'لا توجد بيانات لهذا الشهر','lock':'قفل التطبيق','pin':'رمز من 4 أرقام','confirm':'هل تريد المتابعة؟','ok':'موافق','error':'يرجى التحقق من البيانات','partner':'راتب الشريك','family':'راتب فرد في العائلة','salary':'راتب','extra':'راتب إضافي','second':'دخل عمل إضافي','fees':'أتعاب خدمات','sales':'مبيعات','gift':'هدية','social':'الضمان الاجتماعي','refund':'مبالغ مستردة','debtIncome':'دين مستلم','other':'أخرى','savingsIn':'إيداع ادخار','savingsOut':'سحب من الادخار','security':'تأكيد التعديل','tap':'موافق فقط','pinAuth':'رمز التحقق','deleteAsk':'حذف هذا البيان؟','debtRemaining':'المتبقي','separate':'دفتر الادخار مستقل ولا يدخل في إجمالي الدخل والمصروفات.'};
+    const nl = {'income':'Inkomsten','fixed':'Vaste verplichtingen','variable':'Variabele uitgaven','debts':'Schulden','savings':'Spaarboek','purchases':'Toekomstige aankopen','statement':'Overzicht','analytics':'Analyse & indicatoren','costCenter':'Kostenplaats','incomeRecurring':'Terugkerende inkomsten','expenseRecurring':'Terugkerende uitgaven','centers':'Kostenplaatsen','monthCompare':'Maandvergelijking','debtAnalysis':'Schuldenanalyse','savingsAnalysis':'Spaaranalyse','previousMonth':'Vorige maand','occurrences':'Herhalingsmaanden','periodTotal':'Periode totaal','add':'Item toevoegen','name':'Naam / omschrijving','amount':'Bedrag','date':'Datum','note':'Notities','save':'Opslaan','cancel':'Annuleren','paid':'Betaald','unpaid':'Openstaand','edit':'Bewerken','delete':'Verwijderen','settings':'Instellingen','language':'Taal','currency':'Valuta','backup':'Back-up maken','restore':'Back-up herstellen','month':'Maand','balance':'Maandsaldo','incomeTotal':'Totale inkomsten','expenseTotal':'Totale uitgaven','type':'Inkomstensoort','due':'Vervaldatum','defer':'Uitstellen','deferred':'Uitgesteld','next':'Volgende maand','dateTarget':'Specifieke datum','share':'Delen','empty':'Geen gegevens voor deze maand','lock':'App-vergrendeling','pin':'Pincode van 4 cijfers','confirm':'Doorgaan?','ok':'OK','error':'Controleer de gegevens','partner':'Salaris partner','family':'Salaris familielid','salary':'Salaris','extra':'Extra salaris','second':'Bijbaan','fees':'Dienstverlening','sales':'Verkoop','gift':'Cadeau','social':'Sociale uitkering','refund':'Terugbetaling','debtIncome':'Ontvangen lening','other':'Overig','savingsIn':'Spaarstorting','savingsOut':'Spaaropname','security':'Bewerkingsbevestiging','tap':'Alleen OK','pinAuth':'Pincode','deleteAsk':'Dit item verwijderen?','debtRemaining':'Resterend','separate':'Het spaarboek telt niet mee in inkomsten of uitgaven.'};
+    const en = {'income':'Income','fixed':'Fixed obligations','variable':'Variable expenses','debts':'Debts','savings':'Savings ledger','purchases':'Future purchases','statement':'Statement','analytics':'Analytics & indicators','costCenter':'Cost center','incomeRecurring':'Recurring income','expenseRecurring':'Recurring expenses','centers':'Cost centers','monthCompare':'Monthly comparison','debtAnalysis':'Debt analysis','savingsAnalysis':'Savings analysis','previousMonth':'Previous month','occurrences':'Recurring months','periodTotal':'Period total','add':'Add item','name':'Name / description','amount':'Amount','date':'Date','note':'Notes','save':'Save','cancel':'Cancel','paid':'Paid','unpaid':'Unpaid','edit':'Edit','delete':'Delete','settings':'Settings','language':'Language','currency':'Currency','backup':'Create backup','restore':'Restore backup','month':'Month','balance':'Monthly balance','incomeTotal':'Total income','expenseTotal':'Total expenses','type':'Income type','due':'Due date','defer':'Defer','deferred':'Deferred item','next':'Next month','dateTarget':'Specific date','share':'Share','empty':'No entries for this month','lock':'App lock','pin':'4-digit PIN','confirm':'Continue?','ok':'OK','error':'Check the entered values','partner':'Partner salary','family':'Family member salary','salary':'Salary','extra':'Extra salary','second':'Secondary job','fees':'Service fees','sales':'Sales','gift':'Gift','social':'Social security','refund':'Refunds','debtIncome':'Debt received','other':'Other','savingsIn':'Savings deposit','savingsOut':'Savings withdrawal','security':'Edit confirmation','tap':'Tap OK only','pinAuth':'PIN','deleteAsk':'Delete this item?','debtRemaining':'Remaining','separate':'Savings are separate and excluded from income/expense totals.'};
     return language == 'ar' ? ar : language == 'en' ? en : nl;
   }
   String t(String k) => labels[k] ?? k;
@@ -128,6 +128,7 @@ class _HomePageState extends State<HomePage> {
     final name = TextEditingController(text: existing?['name']?.toString() ?? '');
     final amount = TextEditingController(text: existing?['amount']?.toString() ?? '');
     final note = TextEditingController(text: existing?['note']?.toString() ?? '');
+    final costCenter = TextEditingController(text: existing?['costCenter']?.toString() ?? '');
     final dueController = TextEditingController(text: existing?['due']?.toString() ?? '');
     String date = existing?['date']?.toString() ?? '${selectedMonth}-01';
     String type = existing?['type']?.toString() ?? 'salary';
@@ -145,6 +146,7 @@ class _HomePageState extends State<HomePage> {
             TextField(controller:name, textInputAction:TextInputAction.next, decoration:InputDecoration(labelText:t('name'))),
             TextField(controller:amount, textInputAction:TextInputAction.next, keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:false), decoration:InputDecoration(labelText:t('amount'))),
             TextField(controller:note, textInputAction:TextInputAction.newline, minLines:1, maxLines:3, decoration:InputDecoration(labelText:t('note'))),
+            TextField(controller:costCenter, textInputAction:TextInputAction.next, decoration:InputDecoration(labelText:t('costCenter'))),
             const SizedBox(height:8),
             ListTile(contentPadding:EdgeInsets.zero,title:Text('${t('date')}: $date'),trailing:const Icon(Icons.calendar_month),onTap:() async {
               final parsed = DateTime.tryParse(date);
@@ -182,7 +184,7 @@ class _HomePageState extends State<HomePage> {
               if(parsedAmount==null || !parsedAmount.isFinite || parsedAmount<0){setD(()=>validationError=language=='ar'?'يرجى إدخال مبلغ صحيح':'Please enter a valid amount');return;}
               final dueValue=dueController.text.trim();
               if(dueValue.isNotEmpty && (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(dueValue) || DateTime.tryParse(dueValue)==null || DateTime.tryParse(dueValue)!.toIso8601String().substring(0,10)!=dueValue)){setD(()=>validationError=language=='ar'?'تاريخ الاستحقاق غير صحيح':'Please enter a valid due date');return;}
-              Navigator.pop(ctx,{'name':name.text.trim(),'amount':parsedAmount,'note':note.text.trim(),'date':date,'due':dueValue,'type':type,'kind':savingKind});
+              Navigator.pop(ctx,{'name':name.text.trim(),'amount':parsedAmount,'note':note.text.trim(),'costCenter':costCenter.text.trim(),'date':date,'due':dueValue,'type':type,'kind':savingKind});
             },child:Text(t('save')))
           ],
         )),
@@ -191,6 +193,7 @@ class _HomePageState extends State<HomePage> {
       name.dispose();
       amount.dispose();
       note.dispose();
+      costCenter.dispose();
       dueController.dispose();
     }
     if(res==null)return;
@@ -499,9 +502,9 @@ class _HomePageState extends State<HomePage> {
         ])),
         const SizedBox(height:8),
         SizedBox(height:68,child:ListView(scrollDirection:Axis.horizontal,children:List.generate(tabs.length,(i)=>Padding(padding:const EdgeInsets.symmetric(horizontal:4,vertical:8),child:ChoiceChip(label:Text(t(tabs[i])),selected:tabIndex==i,onSelected:(_)=>setState(()=>tabIndex=i)))))),
-        Expanded(child:currentKey=='statement'?_statement():currentKey=='debts'?_debtList():_recordList(currentKey)),
+        Expanded(child:currentKey=='statement'?_statement():currentKey=='analytics'?_analytics():currentKey=='debts'?_debtList():_recordList(currentKey)),
       ]),
-      floatingActionButton:currentKey=='statement'?FloatingActionButton.extended(onPressed:backup,icon:const Icon(Icons.backup),label:Text(t('backup'))):FloatingActionButton.extended(onPressed:()=>addRecord(currentKey),icon:const Icon(Icons.add),label:Text(t('add'))),
+      floatingActionButton:currentKey=='statement'||currentKey=='analytics'?FloatingActionButton.extended(onPressed:currentKey=='statement'?backup:()=>setState(()=>tabIndex=tabs.indexOf('statement')),icon:Icon(currentKey=='statement'?Icons.backup:Icons.receipt_long),label:Text(currentKey=='statement'?t('backup'):t('statement'))):FloatingActionButton.extended(onPressed:()=>addRecord(currentKey),icon:const Icon(Icons.add),label:Text(t('add'))),
     ));
   }
   @override void dispose(){_holdTimer?.cancel();super.dispose();}
@@ -533,6 +536,57 @@ class _HomePageState extends State<HomePage> {
       ])));
     });
   }
+
+  double _sumMonth(String key,String month)=>records[key]!.where((r)=>(r['date']??'').toString().startsWith(month)).fold(0.0,(s,r)=>s+((r['amount'] as num?)?.toDouble()??0));
+  double _savingMonth(String month,String kind)=>records['savings']!.where((r)=>(r['date']??'').toString().startsWith(month)&&(r['kind']??'in')==kind).fold(0.0,(s,r)=>s+((r['amount'] as num?)?.toDouble()??0));
+  String _prevMonth(String month){final p=month.split('-');final d=DateTime(int.parse(p[0]),int.parse(p[1]),1);return _month(DateTime(d.year,d.month-1,1));}
+  String _costCenter(Map<String,dynamic> r){final c=(r['costCenter']??'').toString().trim();return c.isEmpty?(language=='ar'?'غير مصنف':'Unassigned'):c;}
+  Widget _aLine(String label,String value,{String? detail})=>Padding(padding:const EdgeInsets.symmetric(vertical:6),child:Row(children:[Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(label,style:const TextStyle(fontWeight:FontWeight.w600)),if(detail!=null)Text(detail,style:Theme.of(context).textTheme.bodySmall)])),Text(value,style:const TextStyle(fontWeight:FontWeight.bold))]));
+  Widget _aSection(String title,List<Widget> children)=>Card(child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16,color:Color(0xFF173F35))),const Divider(),...children])));
+  Widget _analytics(){
+    final prev=_prevMonth(selectedMonth), inc=_sumMonth('income',selectedMonth), fixed=_sumMonth('fixed',selectedMonth), variable=_sumMonth('variable',selectedMonth);
+    final exp=fixed+variable, net=inc-exp, prevInc=_sumMonth('income',prev), prevExp=_sumMonth('fixed',prev)+_sumMonth('variable',prev);
+    final deposits=_savingMonth(selectedMonth,'in'), withdrawals=_savingMonth(selectedMonth,'out'), debtMonth=_sumMonth('debts',selectedMonth);
+    final debtOpen=records['debts']!.fold(0.0,(s,r){final a=(r['amount'] as num?)?.toDouble()??0,p=(r['repaid'] as num?)?.toDouble()??0;return s+(a-p).clamp(0.0,a);});
+    final centers=<String,double>{};
+    for(final key in ['fixed','variable']){for(final r in records[key]!.where((r)=>(r['date']??'').toString().startsWith(selectedMonth))){final c=_costCenter(r);centers[c]=(centers[c]??0)+((r['amount'] as num?)?.toDouble()??0);}}
+    final centerRows=centers.entries.toList()..sort((a,b)=>b.value.compareTo(a.value));
+    final groups=<String,Map<String,dynamic>>{};
+    for(final key in ['income','fixed','variable']){for(final r in records[key]!){
+      final name=(r['name']??'').toString().trim();if(name.isEmpty)continue;
+      final center=_costCenter(r), id=key+'|'+center+'|'+name.toLowerCase();
+      final g=groups.putIfAbsent(id,()=>{'key':key,'name':name,'center':center,'months':<String>{},'total':0.0,'current':0.0});
+      final date=(r['date']??'').toString();if(date.length>=7)(g['months'] as Set<String>).add(date.substring(0,7));
+      final amount=(r['amount'] as num?)?.toDouble()??0;g['total']=(g['total'] as double)+amount;if(date.startsWith(selectedMonth))g['current']=(g['current'] as double)+amount;
+    }}
+    final recurring=groups.values.where((g)=>(g['months'] as Set<String>).length>=2).toList()..sort((a,b)=>(b['total'] as double).compareTo(a['total'] as double));
+    final ri=recurring.where((g)=>g['key']=='income').toList(), re=recurring.where((g)=>g['key']!='income').toList();
+    final mlist=months.toList()..sort((a,b)=>b.compareTo(a));final chartMonths=mlist.take(6).toList().reversed;
+    final maxValue=chartMonths.fold<double>(0,(m,x){final a=_sumMonth('income',x),b=_sumMonth('fixed',x)+_sumMonth('variable',x);return [m,a,b].reduce((v,w)=>v>w?v:w);});
+    Widget bar(String label,double v,Color color)=>Padding(padding:const EdgeInsets.symmetric(vertical:3),child:Row(children:[SizedBox(width:65,child:Text(label,style:const TextStyle(fontSize:11))),Expanded(child:LinearProgressIndicator(value:maxValue==0?0:(v/maxValue).clamp(0.0,1.0),minHeight:8,color:color,backgroundColor:color.withValues(alpha:0.12))),const SizedBox(width:6),SizedBox(width:82,child:Text(money(v),textAlign:TextAlign.end,style:const TextStyle(fontSize:10)))]));
+    return ListView(padding:const EdgeInsets.fromLTRB(12,4,12,90),children:[
+      Text((language=='ar'?'تحليل الشهر ':'Analysis · ')+selectedMonth,style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold,color:Color(0xFF173F35))),
+      GridView.count(crossAxisCount:2,shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),childAspectRatio:2.1,crossAxisSpacing:8,mainAxisSpacing:8,children:[
+        _aSection(t('incomeTotal'),[Text(money(inc),style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16))]),
+        _aSection(t('expenseTotal'),[Text(money(exp),style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16))]),
+        _aSection(t('balance'),[Text(money(net),style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16))]),
+        _aSection(language=='ar'?'المصروفات / الدخل':'Expenses / income',[Text(inc>0?(exp/inc*100).toStringAsFixed(1)+'%':'—',style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16))]),
+      ]),
+      _aSection(t('monthCompare'),[
+        _aLine(t('incomeTotal'),money(inc),detail:t('previousMonth')+': '+money(prevInc)),
+        _aLine(t('expenseTotal'),money(exp),detail:t('previousMonth')+': '+money(prevExp)),
+        _aLine(t('balance'),money(net),detail:(language=='ar'?'فرق الرصيد: ':'Balance change: ')+money(net-(prevInc-prevExp))),
+        ...chartMonths.map((m)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m,style:const TextStyle(fontWeight:FontWeight.w600)),bar(t('incomeTotal'),_sumMonth('income',m),const Color(0xFF2E7D5B)),bar(t('expenseTotal'),_sumMonth('fixed',m)+_sumMonth('variable',m),const Color(0xFFD97745)),const Divider(height:12)])),
+      ]),
+      _aSection(t('centers'),centerRows.isEmpty?[Text(language=='ar'?'لا توجد بيانات مصنفة':'No classified expenses')]:centerRows.map((e)=>_aLine(e.key,money(e.value),detail:exp>0?(e.value/exp*100).toStringAsFixed(1)+'%':'')).toList()),
+      _aSection(t('incomeRecurring'),ri.isEmpty?[Text(language=='ar'?'لا توجد بنود دخل متكررة بعد':'No recurring income items yet')]:ri.map((g)=>_aLine(g['name'] as String,money(g['current'] as double),detail:g['center'].toString()+' · '+(g['months'] as Set<String>).length.toString()+' '+t('occurrences')+' · '+t('periodTotal')+': '+money(g['total'] as double))).toList()),
+      _aSection(t('expenseRecurring'),re.isEmpty?[Text(language=='ar'?'لا توجد بنود مصروفات متكررة بعد':'No recurring expense items yet')]:re.map((g)=>_aLine(g['name'] as String,money(g['current'] as double),detail:t(g['key'] as String)+' · '+g['center'].toString()+' · '+(g['months'] as Set<String>).length.toString()+' '+t('occurrences')+' · '+t('periodTotal')+': '+money(g['total'] as double))).toList()),
+      _aSection(t('debtAnalysis'),[_aLine(language=='ar'?'ديون مسجلة هذا الشهر':'New debt this month',money(debtMonth)),_aLine(language=='ar'?'الديون المتبقية':'Outstanding debt',money(debtOpen))]),
+      _aSection(t('savingsAnalysis'),[_aLine(language=='ar'?'الإيداعات':'Deposits',money(deposits)),_aLine(language=='ar'?'السحوبات':'Withdrawals',money(withdrawals)),_aLine(language=='ar'?'صافي الادخار':'Net savings',money(deposits-withdrawals))]),
+      Padding(padding:const EdgeInsets.all(8),child:Text(language=='ar'?'البنود القديمة بلا مركز تكلفة تظهر ضمن «غير مصنف». ويُكتشف التكرار عند ظهور الاسم والقائمة ومركز التكلفة في شهرين مختلفين على الأقل.':'Legacy items without a cost center are shown as Unassigned. Recurrence means the same item, list and cost center appear in at least two different months.',style:Theme.of(context).textTheme.bodySmall)),
+    ]);
+  }
+
   Widget _debtList() => _recordList('debts');
   Widget _statement() {
     final inc=forMonth('income'), fixed=forMonth('fixed'), variable=forMonth('variable');
