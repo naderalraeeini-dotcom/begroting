@@ -543,7 +543,15 @@ class _HomePageState extends State<HomePage> {
   String _prevMonth(String month){final p=month.split('-');final d=DateTime(int.parse(p[0]),int.parse(p[1]),1);return _month(DateTime(d.year,d.month-1,1));}
   String _costCenter(Map<String,dynamic> r){final c=(r['costCenter']??'').toString().trim();return c.isEmpty?(language=='ar'?'غير مصنف':'Unassigned'):c;}
   Widget _aLine(String label,String value,{String? detail})=>Padding(padding:const EdgeInsets.symmetric(vertical:6),child:Row(children:[Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(label,style:const TextStyle(fontWeight:FontWeight.w600)),if(detail!=null)Text(detail,style:Theme.of(context).textTheme.bodySmall)])),Text(value,style:const TextStyle(fontWeight:FontWeight.bold))]));
-  Widget _aMetric(String title,String value)=>Card(child:Padding(padding:const EdgeInsets.all(10),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:Theme.of(context).textTheme.bodySmall),const Spacer(),FittedBox(fit:BoxFit.scaleDown,child:Text(value,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)))])));
+  Widget _kpiCard(String title,String value,double progress,String caption,Color color){
+    final p=progress.clamp(0.0,1.0).toDouble();
+    return Card(elevation:1,child:Padding(padding:const EdgeInsets.all(13),child:Column(crossAxisAlignment:CrossAxisAlignment.start,mainAxisAlignment:MainAxisAlignment.spaceBetween,children:[
+      Text(title,style:Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight:FontWeight.w600),maxLines:2,overflow:TextOverflow.ellipsis),
+      FittedBox(fit:BoxFit.scaleDown,alignment:AlignmentDirectional.centerStart,child:Text(value,style:TextStyle(fontWeight:FontWeight.w800,fontSize:23,color:color))),
+      ClipRRect(borderRadius:BorderRadius.circular(8),child:LinearProgressIndicator(value:p,minHeight:7,color:color,backgroundColor:color.withValues(alpha:0.13))),
+      Text(caption,style:Theme.of(context).textTheme.labelSmall?.copyWith(color:Colors.black54),maxLines:2,overflow:TextOverflow.ellipsis),
+    ])));
+  }
   Widget _aSection(String title,List<Widget> children)=>Card(child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16,color:Color(0xFF173F35))),const Divider(),...children])));
   Widget _analytics(){
     final prev=_prevMonth(selectedMonth), inc=_sumMonth('income',selectedMonth), fixed=_sumMonth('fixed',selectedMonth), variable=_sumMonth('variable',selectedMonth);
@@ -571,17 +579,22 @@ class _HomePageState extends State<HomePage> {
     Widget bar(String label,double v,Color color)=>Padding(padding:const EdgeInsets.symmetric(vertical:3),child:Row(children:[SizedBox(width:65,child:Text(label,style:const TextStyle(fontSize:11))),Expanded(child:LinearProgressIndicator(value:maxValue==0?0:(v/maxValue).clamp(0.0,1.0),minHeight:8,color:color,backgroundColor:color.withValues(alpha:0.12))),const SizedBox(width:6),SizedBox(width:82,child:Text(money(v),textAlign:TextAlign.end,style:const TextStyle(fontSize:10)))]));
     return ListView(padding:const EdgeInsets.fromLTRB(12,4,12,90),children:[
       Text((language=='ar'?'تحليل الشهر ':'Analysis · ')+selectedMonth,style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold,color:Color(0xFF173F35))),
-      GridView.count(crossAxisCount:2,shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),childAspectRatio:2.1,crossAxisSpacing:8,mainAxisSpacing:8,children:[
-        _aMetric(t('incomeTotal'),money(inc)),
-        _aMetric(t('expenseTotal'),money(exp)),
-        _aMetric(t('balance'),money(net)),
-        _aMetric(language=='ar'?'المصروفات / الدخل':'Expenses / income',inc>0?(exp/inc*100).toStringAsFixed(1)+'%':'—'),
+      GridView.count(crossAxisCount:2,shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),childAspectRatio:1.62,crossAxisSpacing:9,mainAxisSpacing:9,children:[
+        _kpiCard(language=='ar'?'نسبة المصروفات إلى الدخل':'Expenses / income',inc>0?(exp/inc*100).toStringAsFixed(1)+'%':'—',inc>0?exp/inc:0,language=='ar'?'كلما انخفضت كان التحكم أفضل':'Lower is better',const Color(0xFF8A3548)),
+        _kpiCard(language=='ar'?'تغير المصروفات':'Expense change',prevExp>0?((exp-prevExp)/prevExp*100).toStringAsFixed(1)+'%':(exp>0?'جديد':'0.0%'),prevExp>0?(exp/prevExp): (exp>0?1:0),language=='ar'?'مقارنة بالشهر السابق':'Compared with previous month',exp>prevExp?const Color(0xFFC46B43):const Color(0xFF2E7D5B)),
+        _kpiCard(language=='ar'?'تغير الدخل':'Income change',prevInc>0?((inc-prevInc)/prevInc*100).toStringAsFixed(1)+'%':(inc>0?'جديد':'0.0%'),prevInc>0?(inc/prevInc): (inc>0?1:0),language=='ar'?'مقارنة بالشهر السابق':'Compared with previous month',inc>=prevInc?const Color(0xFF2E7D5B):const Color(0xFFC46B43)),
+        _kpiCard(language=='ar'?'معدل الفائض':'Savings capacity',inc>0?(net/inc*100).toStringAsFixed(1)+'%':'—',inc>0?(net/inc):0,language=='ar'?'الفائض كنسبة من الدخل':'Surplus as a share of income',const Color(0xFF547A9A)),
       ]),
       _aSection(t('monthCompare'),[
-        _aLine(t('incomeTotal'),money(inc),detail:t('previousMonth')+': '+money(prevInc)),
-        _aLine(t('expenseTotal'),money(exp),detail:t('previousMonth')+': '+money(prevExp)),
-        _aLine(t('balance'),money(net),detail:(language=='ar'?'فرق الرصيد: ':'Balance change: ')+money(net-(prevInc-prevExp))),
-        ...chartMonths.map((m)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m,style:const TextStyle(fontWeight:FontWeight.w600)),bar(t('incomeTotal'),_sumMonth('income',m),const Color(0xFF2E7D5B)),bar(t('expenseTotal'),_sumMonth('fixed',m)+_sumMonth('variable',m),const Color(0xFFD97745)),const Divider(height:12)])),
+        Row(children:[
+          Expanded(child:Text(language=='ar'?'الدخل':'Income',style:const TextStyle(fontSize:11,fontWeight:FontWeight.w600))),
+          Container(width:10,height:10,decoration:const BoxDecoration(color:Color(0xFF2E7D5B),shape:BoxShape.circle)),
+          const SizedBox(width:5),
+          Expanded(child:Text(language=='ar'?'المصروفات':'Expenses',style:const TextStyle(fontSize:11,fontWeight:FontWeight.w600))),
+          Container(width:10,height:10,decoration:const BoxDecoration(color:Color(0xFFD97745),shape:BoxShape.circle)),
+        ]),
+        const SizedBox(height:8),
+        ...chartMonths.map((m)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m,style:const TextStyle(fontWeight:FontWeight.w700)),bar(language=='ar'?'الدخل':'Income',_sumMonth('income',m),const Color(0xFF2E7D5B)),bar(language=='ar'?'المصروفات':'Expenses',_sumMonth('fixed',m)+_sumMonth('variable',m),const Color(0xFFD97745)),const Divider(height:12)])),
       ]),
       _aSection(language=='ar'?'مراكز تكلفة الدخل':'Income cost centers',incomeCenterRows.isEmpty?[Text(language=='ar'?'لا توجد بيانات دخل مصنفة':'No classified income')]:incomeCenterRows.map((e)=>_aLine(e.key,money(e.value),detail:inc>0?(e.value/inc*100).toStringAsFixed(1)+'%':'')).toList()),
       _aSection(t('centers'),centerRows.isEmpty?[Text(language=='ar'?'لا توجد بيانات مصنفة':'No classified expenses')]:centerRows.map((e)=>_aLine(e.key,money(e.value),detail:exp>0?(e.value/exp*100).toStringAsFixed(1)+'%':'')).toList()),
@@ -607,7 +620,16 @@ class _HomePageState extends State<HomePage> {
         _statementLine(t('balance'),money(totalIncome-totalExpenses),strong:true),
       ]))),
       const SizedBox(height:8),
-      ...rows.map((r)=>Card(child:ListTile(title:Text(r['name']??''),subtitle:Text('${r['date']??''} · ${r['group']}'),trailing:Text('${r['sign']==-1?'−':''}${money(r['amount']??0)}',style:const TextStyle(fontWeight:FontWeight.bold))))),
+      ...rows.map((r){
+        final isIncome=r['sign']==1;
+        final incomeColor=const Color(0xFF800020);
+        return Card(child:ListTile(
+          leading:Container(width:4,height:42,decoration:BoxDecoration(color:isIncome?incomeColor:const Color(0xFFD97745),borderRadius:BorderRadius.circular(4))),
+          title:Text(r['name']??'',style:TextStyle(fontWeight:FontWeight.w700,color:isIncome?incomeColor:null)),
+          subtitle:Text('${r['date']??''} · ${r['group']}',style:TextStyle(color:isIncome?incomeColor.withValues(alpha:0.78):null)),
+          trailing:Text('${isIncome?'':'−'}${money(r['amount']??0)}',style:TextStyle(fontWeight:FontWeight.bold,color:isIncome?incomeColor:const Color(0xFF8A4F37))),
+        ));
+      }),
       const SizedBox(height:8),
       FilledButton.icon(onPressed:()=>Share.share('Begroting · $selectedMonth\n'+rows.map((r)=>'${r['date']} | ${r['name']} | ${r['group']} | ${money(r['amount']??0)}').join('\n')+'\n'+t('balance')+': ${money(totalIncome-totalExpenses)}'),icon:const Icon(Icons.share),label:Text(t('share'))),
       OutlinedButton.icon(onPressed:backup,icon:const Icon(Icons.backup),label:Text(t('backup'))),
