@@ -116,8 +116,9 @@ class _HomePageState extends State<HomePage> {
           Text('${debt['name'] ?? ''} · ${t('debtAsOf')}: ${money(remaining)}'),
           TextField(controller:amountController,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:InputDecoration(labelText:t('debtPaymentAmount'))),
           ListTile(contentPadding:EdgeInsets.zero,title:Text('${t('debtPaymentDate')}: $date'),trailing:const Icon(Icons.calendar_month),onTap:()async{
-            final parts=selectedMonth.split('-');final first=DateTime(int.parse(parts[0]),int.parse(parts[1]),1);final last=DateTime(first.year,first.month+1,0);
-            final picked=await showDatePicker(context:ctx,initialDate:first,firstDate:first,lastDate:last);
+            final parts=selectedMonth.split('-');final monthStart=DateTime(int.parse(parts[0]),int.parse(parts[1]),1);final monthEnd=DateTime(monthStart.year,monthStart.month+1,0);
+            final debtDate=DateTime.tryParse((debt['date']??'').toString());final first=debtDate!=null&&debtDate.isAfter(monthStart)?debtDate:monthStart;
+            final picked=await showDatePicker(context:ctx,initialDate:first,firstDate:first,lastDate:monthEnd);
             if(picked!=null)setD(()=>date='${picked.year}-${picked.month.toString().padLeft(2,'0')}-${picked.day.toString().padLeft(2,'0')}');
           }),
           TextField(controller:noteController,minLines:1,maxLines:2,decoration:InputDecoration(labelText:t('debtPaymentNote'))),
@@ -635,7 +636,7 @@ class _HomePageState extends State<HomePage> {
           ])
         ])),
         const SizedBox(width:8),
-        Column(mainAxisSize:MainAxisSize.min,children:[Text(money(signed),style:TextStyle(fontWeight:FontWeight.bold,color:paid?Colors.grey.shade600:const Color(0xFF245B4B))),if(['income','fixed','variable','debts','savings','purchases'].contains(key)) IconButton(tooltip:language=='ar'?'نسخ أو نقل أو مشاركة':'Copy, move or share',onPressed:()=>itemActions(key,r),icon:const Icon(Icons.more_vert))]),
+        Column(mainAxisSize:MainAxisSize.min,children:[Text(money(signed),style:TextStyle(fontWeight:FontWeight.bold,color:paid?Colors.grey.shade600:(debtColor??const Color(0xFF245B4B)))),if(['income','fixed','variable','debts','savings','purchases'].contains(key)) IconButton(tooltip:key=='debts'?(language=='ar'?'مشاركة':'Share'):(language=='ar'?'نسخ أو نقل أو مشاركة':'Copy, move or share'),onPressed:()=>itemActions(key,r),icon:const Icon(Icons.more_vert))]),
       ])));
     });
   }
