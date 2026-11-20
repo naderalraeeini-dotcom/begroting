@@ -806,7 +806,7 @@ class _HomePageState extends State<HomePage> {
         const Divider(),
         Text('${language=='ar'?'الرصيد له':'Receivable balance'}: ${money(receivable.fold<double>(0,(v,r)=>v+_debtRemainingAsOf(r,selectedMonth)))}'),
         Text('${language=='ar'?'الرصيد عليه':'Payable balance'}: ${money(payable.fold<double>(0,(v,r)=>v+_debtRemainingAsOf(r,selectedMonth)))}'),
-      ])))),
+      ]))),
       actions:[
         TextButton.icon(onPressed:()=>_shareDebtStatement(account,entries,kind:'receivable'),icon:const Icon(Icons.print_outlined),label:Text(language=='ar'?'طباعة كشف (له)':'Print receivable')),
         TextButton.icon(onPressed:()=>_shareDebtStatement(account,entries,kind:'payable'),icon:const Icon(Icons.print_outlined),label:Text(language=='ar'?'طباعة كشف (عليه)':'Print payable')),
