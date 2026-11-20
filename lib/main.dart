@@ -525,7 +525,7 @@ class _HomePageState extends State<HomePage> {
         ])),
         const SizedBox(width:8),
         Column(mainAxisSize:MainAxisSize.min,children:[Text(money(signed),style:TextStyle(fontWeight:FontWeight.bold,color:paid?Colors.grey.shade600:const Color(0xFF245B4B))),if(['income','fixed','variable','debts','savings','purchases'].contains(key)) IconButton(tooltip:language=='ar'?'نسخ أو نقل أو مشاركة':'Copy, move or share',onPressed:()=>itemActions(key,r),icon:const Icon(Icons.more_vert))]),
-      ]))));
+      ])));
     });
   }
   Widget _debtList() => _recordList('debts');
