@@ -86,7 +86,7 @@ jobs:
               fg.resize((size*3,size*3),Image.Resampling.LANCZOS).save(root/folder/"ic_launcher_foreground.png")
           colors = root/"values"/"colors.xml"
           colors.parent.mkdir(parents=True,exist_ok=True)
-          colors.write_text('''<?xml version="1.0" encoding="utf-8"?>\\n<resources>\\n    <color name="ic_launcher_background">#173F35</color>\\n</resources>\\n''')
+          colors.write_text('''<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#173F35</color>\n</resources>\n''')
           print("Created custom green-and-gold Begroting icon assets")
           PY
 
@@ -102,7 +102,7 @@ jobs:
               if not path.exists():
                   continue
               text = path.read_text()
-              updated, count = re.subn(r'(?m)^(\\s*compileSdk(?:Version)?\\s*(?:=\\s*)?)(?:flutter\\.compileSdkVersion|[0-9]+)', r'\\g<1>36', text)
+              updated, count = re.subn(r'(?m)^(\s*compileSdk(?:Version)?\s*(?:=\s*)?)(?:flutter\\.compileSdkVersion|[0-9]+)', r'\\g<1>36', text)
               if count:
                   path.write_text(updated)
                   found = True
@@ -146,7 +146,7 @@ jobs:
               raise SystemExit("Android app Gradle file was not generated")
           text = path.read_text()
           expected_id = "com.example.begroting"
-          pattern = r'(?m)^(\\s*applicationId\\s*(?:=\\s*)?)["\\']([^"\\']+)["\\']'
+          pattern = r'(?m)^(\s*applicationId\s*(?:=\s*)?)["\\']([^"\\']+)["\\']'
           text, count = re.subn(pattern, lambda m: m.group(1) + '"' + expected_id + '"', text, count=1)
           if count != 1:
               raise SystemExit("Could not locate exactly one applicationId")
@@ -162,10 +162,10 @@ jobs:
           }
           '''
               if 'create("release")' not in text:
-                  text = text.replace("    buildTypes {", signing + "\\n    buildTypes {", 1)
+                  text = text.replace("    buildTypes {", signing + "\n    buildTypes {", 1)
               text = text.replace('signingConfig = signingConfigs.getByName("debug")', 'signingConfig = signingConfigs.getByName("release")')
               if 'signingConfig = signingConfigs.getByName("release")' not in text:
-                  text = re.sub(r'(release\\s*\\{)', r'\\1\\n            signingConfig = signingConfigs.getByName("release")', text, count=1)
+                  text = re.sub(r'(release\s*\\{)', r'\1\n            signingConfig = signingConfigs.getByName("release")', text, count=1)
           else:
               signing = '''
           signingConfigs {
@@ -178,10 +178,10 @@ jobs:
           }
           '''
               if "signingConfigs {" not in text:
-                  text = text.replace("    buildTypes {", signing + "\\n    buildTypes {", 1)
+                  text = text.replace("    buildTypes {", signing + "\n    buildTypes {", 1)
               text = text.replace("signingConfig signingConfigs.debug", "signingConfig signingConfigs.release")
               if "signingConfig signingConfigs.release" not in text:
-                  text = re.sub(r'(release\\s*\\{)', r'\\1\\n            signingConfig signingConfigs.release', text, count=1)
+                  text = re.sub(r'(release\s*\\{)', r'\1\n            signingConfig signingConfigs.release', text, count=1)
           path.write_text(text)
           print(f"Configured {path} with stable ID {expected_id} and permanent release signing")
           PY
@@ -216,8 +216,8 @@ jobs:
           cert = (temp / "keystore-fingerprint.txt").read_text()
           def normalize(value):
               return re.sub(r"[^0-9A-F]", "", value.upper())
-          a = re.search(r"(?:Signer #1|V[0-9]+ Signer): certificate SHA-256 digest:\\s*([0-9a-fA-F:]+)", apk, re.IGNORECASE)
-          b = re.search(r"SHA256 Fingerprint\\s*=\\s*([0-9a-fA-F:]+)", cert, re.IGNORECASE)
+          a = re.search(r"(?:Signer #1|V[0-9]+ Signer): certificate SHA-256 digest:\s*([0-9a-fA-F:]+)", apk, re.IGNORECASE)
+          b = re.search(r"SHA256 Fingerprint\s*=\s*([0-9a-fA-F:]+)", cert, re.IGNORECASE)
           if not a or not b:
               print("APK signer fingerprint line found:", bool(a))
               print("Keystore fingerprint line found:", bool(b))
