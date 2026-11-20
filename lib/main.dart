@@ -101,15 +101,21 @@ class _HomePageState extends State<HomePage> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly], maxLength: 4, obscureText: true,
           textInputAction: TextInputAction.done,
           decoration: InputDecoration(labelText: t('pin'), errorText: error.isEmpty ? null : error),
-          onSubmitted: (_) {
-            if (controller.text == pin && controller.text.length == 4) { Navigator.pop(ctx); }
-            else { setD(() => error = language == 'ar' ? 'الرمز غير صحيح، حاول مرة أخرى' : 'Incorrect PIN. Try again.'); controller.clear(); }
+          onChanged: (value) {
+            if (value.length == 4) {
+              if (value == pin) {
+                Navigator.pop(ctx);
+              } else {
+                setD(() => error = language == 'ar' ? 'الرمز غير صحيح، حاول مرة أخرى' : 'Incorrect PIN. Try again.');
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted && controller.text == value) controller.clear();
+                });
+              }
+            } else if (error.isNotEmpty) {
+              setD(() => error = '');
+            }
           },
         ),
-        actions: [FilledButton(onPressed: () {
-          if (controller.text == pin && controller.text.length == 4) { Navigator.pop(ctx); }
-          else { setD(() => error = language == 'ar' ? 'الرمز غير صحيح، حاول مرة أخرى' : 'Incorrect PIN. Try again.'); controller.clear(); }
-        }, child: Text(t('ok')))],
       )));
     } finally {
       controller.dispose();
