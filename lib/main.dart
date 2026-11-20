@@ -204,7 +204,12 @@ class _HomePageState extends State<HomePage> {
     final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime(2000), lastDate: DateTime(2100));
     if (picked == null || !mounted) return;
     final targetMonth = _month(picked);
-    if (targetMonth == selectedMonth) return;
+    if (months.contains(targetMonth)) {
+      if (mounted) setState(() => selectedMonth = targetMonth);
+      await persist();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(language == 'ar' ? 'هذا الكشف موجود بالفعل' : 'This monthly statement already exists')));
+      return;
+    }
     final previousMonth = _month(DateTime(picked.year, picked.month - 1, 1));
     final hasIncome = records['income']!.any((r) => monthOf(r) == previousMonth);
     final hasFixed = records['fixed']!.any((r) => monthOf(r) == previousMonth);
@@ -409,7 +414,7 @@ class _HomePageState extends State<HomePage> {
   }
   Future<void> deleteSelectedMonth() async {
     final month = selectedMonth;
-    if (!await authorize() || !mounted) return;
+    if (!mounted) return;
     final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
       title: Text(language == 'ar' ? 'حذف كشف الشهر' : 'Delete monthly statement'),
       content: Text(language == 'ar'
