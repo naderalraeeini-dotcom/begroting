@@ -577,7 +577,7 @@ class _HomePageState extends State<HomePage> {
   Widget _analytics(){
     final prev=_prevMonth(selectedMonth), inc=_sumMonth('income',selectedMonth), fixed=_sumMonth('fixed',selectedMonth), variable=_sumMonth('variable',selectedMonth);
     final exp=fixed+variable, net=inc-exp, prevInc=_sumMonth('income',prev), prevExp=_sumMonth('fixed',prev)+_sumMonth('variable',prev);
-    final deposits=_savingMonth(selectedMonth,'in'), withdrawals=_savingMonth(selectedMonth,'out'), debtMonth=_sumMonth('debts',selectedMonth);
+    final deposits=_savingMonth(selectedMonth,'in'), withdrawals=_savingMonth(selectedMonth,'out');
     final savingsBalance=records['savings']!.fold<double>(0.0,(s,r)=>s+((((r['kind']??'in')=='out'?-1:1)*((r['amount'] as num?)?.toDouble()??0)).toDouble()));
     final debtReceivable=records['debts']!.where((r)=>r['debtKind']=='receivable').fold<double>(0.0,(s,r){final a=(r['amount'] as num?)?.toDouble()??0,p=(r['repaid'] as num?)?.toDouble()??0;return s+(a-p).clamp(0.0,a).toDouble();});
     final debtPayable=records['debts']!.where((r)=>r['debtKind']!='receivable').fold<double>(0.0,(s,r){final a=(r['amount'] as num?)?.toDouble()??0,p=(r['repaid'] as num?)?.toDouble()??0;return s+(a-p).clamp(0.0,a).toDouble();});
