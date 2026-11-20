@@ -371,7 +371,7 @@ class _HomePageState extends State<HomePage> {
       await Share.share(description, subject: 'Begroting · ${record['name'] ?? ''}');
       return;
     }
-    final targets = categories.where((key) => action == 'copy' || key != source).toList();
+    final targets = categories.where((key) => key != 'debts' && (action == 'copy' || key != source)).toList();
     final target = await showDialog<String>(context: context, builder: (ctx) => AlertDialog(
       title: Text(language == 'ar' ? 'اختر القائمة المستهدفة' : 'Choose destination list'),
       content: Column(mainAxisSize: MainAxisSize.min, children: targets.map((key) => ListTile(title: Text(key == 'fixed' && language == 'ar' ? 'الالتزامات الثابتة' : t(key)), onTap: () => Navigator.pop(ctx, key))).toList()),
