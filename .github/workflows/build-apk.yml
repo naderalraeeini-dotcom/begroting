@@ -102,7 +102,7 @@ jobs:
               if not path.exists():
                   continue
               text = path.read_text()
-              updated, count = re.subn(r'(?m)^(\s*compileSdk(?:Version)?\s*(?:=\s*)?)(?:flutter\\.compileSdkVersion|[0-9]+)', r'\\g<1>36', text)
+              updated, count = re.subn(r'(?m)^(\s*compileSdk(?:Version)?\s*(?:=\s*)?)(?:flutter\.compileSdkVersion|[0-9]+)', r'\g<1>36', text)
               if count:
                   path.write_text(updated)
                   found = True
