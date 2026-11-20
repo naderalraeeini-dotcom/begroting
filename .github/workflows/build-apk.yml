@@ -2,6 +2,12 @@ name: Build Begroting APK
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/build-apk.yml'
   push:
     branches: [main]
     paths:
