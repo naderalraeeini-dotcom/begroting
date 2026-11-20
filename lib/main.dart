@@ -73,7 +73,7 @@ class _HomePageState extends State<HomePage> {
         if (savedHints is Map) {
           hintMemory
             ..clear()
-            ..addAll(savedHints.map((k,v) => MapEntry(k.toString(), (v is List ? v : const []).map((x)=>x.toString()).where((x)=>x.trim().isNotEmpty).toList().take(80).toList()));
+            ..addAll(savedHints.map((k,v) => MapEntry(k.toString(), (v is List ? v : const []).map((x)=>x.toString()).where((x)=>x.trim().isNotEmpty).toList().take(80).toList())));
         }
       } catch (_) {}
     }
