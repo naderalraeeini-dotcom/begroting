@@ -537,16 +537,20 @@ class _HomePageState extends State<HomePage> {
       final r=list[i];final paid=r['paid']==true;final deferred=r['deferredTo']!=null;
       final amount=(r['amount'] as num?)?.toDouble()??0;
       final signed=key=='savings'&&r['kind']=='out'?-amount:amount;
+      final debtColor=key=='debts'
+          ? (r['debtKind']=='receivable'?const Color(0xFFC62828):const Color(0xFF1565C0))
+          : null;
+      final itemTextColor=paid?Colors.grey.shade600:debtColor;
       return Card(color:paid?const Color(0xFFECEFEB):Colors.white,child:Padding(padding:const EdgeInsets.all(12),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
         if(['fixed','variable','purchases'].contains(key))Checkbox(value:paid,onChanged:(v)=>togglePaid(key,r,v??false)),
         Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
-          Text(r['name']??'',style:TextStyle(fontWeight:FontWeight.bold,decoration:paid?TextDecoration.lineThrough:null,color:paid?Colors.grey.shade600:null)),
-          if((r['date']??'').toString().isNotEmpty)Text('${t('date')}: ${r['date']}',style:Theme.of(context).textTheme.bodySmall),
-          if((r['note']??'').toString().isNotEmpty)Text(r['note'],style:Theme.of(context).textTheme.bodySmall),
-          if((r['costCenter']??'').toString().trim().isNotEmpty)Text(t('costCenter')+': '+r['costCenter'].toString(),style:Theme.of(context).textTheme.bodySmall),
+          Text(r['name']??'',style:TextStyle(fontWeight:FontWeight.bold,decoration:paid?TextDecoration.lineThrough:null,color:itemTextColor)),
+          if((r['date']??'').toString().isNotEmpty)Text('${t('date')}: ${r['date']}',style:Theme.of(context).textTheme.bodySmall?.copyWith(color:debtColor)),
+          if((r['note']??'').toString().isNotEmpty)Text(r['note'],style:Theme.of(context).textTheme.bodySmall?.copyWith(color:debtColor)),
+          if((r['costCenter']??'').toString().trim().isNotEmpty)Text(t('costCenter')+': '+r['costCenter'].toString(),style:Theme.of(context).textTheme.bodySmall?.copyWith(color:debtColor)),
           if(deferred)Chip(label:Text('${t('deferred')}: ${r['deferredTo']}'),visualDensity:VisualDensity.compact),
           if(key=='income')Text(t(r['type']??'other'),style:Theme.of(context).textTheme.bodySmall),
-          if(key=='debts')Text('${t(r['debtKind']=='receivable'?'debtOwedToMe':'debtOwedByMe')} · ${t('debtRemaining')}: ${money((amount-(r['repaid'] as num? ?? 0)).clamp(0,amount))}',style:Theme.of(context).textTheme.bodySmall),
+          if(key=='debts')Text('${t(r['debtKind']=='receivable'?'debtOwedToMe':'debtOwedByMe')} · ${t('debtRemaining')}: ${money((amount-(r['repaid'] as num? ?? 0)).clamp(0,amount))}',style:Theme.of(context).textTheme.bodySmall?.copyWith(color:debtColor,fontWeight:FontWeight.w600)),
           Wrap(spacing:4,children:[
             TextButton(onPressed:()=>addRecord(key,r),child:Text(t('edit'))),
             if(key=='purchases'&&!deferred)TextButton(onPressed:()=>deferPurchase(r),child:Text(t('defer'))),
