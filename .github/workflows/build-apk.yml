@@ -219,9 +219,10 @@ jobs:
           keytool -list -v -keystore "$ANDROID_KEYSTORE_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" > "$RUNNER_TEMP/keystore-cert.txt"
           python3 - <<'PY'
           from pathlib import Path
-          import re
-          apk = Path("$RUNNER_TEMP/apk-signature.txt").read_text()
-          cert = Path("$RUNNER_TEMP/keystore-cert.txt").read_text()
+          import os, re
+          temp = Path(os.environ["RUNNER_TEMP"])
+          apk = (temp / "apk-signature.txt").read_text()
+          cert = (temp / "keystore-cert.txt").read_text()
           def normalize(value):
               return re.sub(r"[^0-9A-F]", "", value.upper())
           a = re.search(r"Signer #1 certificate SHA-256 digest: ([0-9a-fA-F:]+)", apk)
