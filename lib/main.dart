@@ -202,14 +202,90 @@ class _HomePageState extends State<HomePage> {
     if(d!=null&&d.length>=7){r['deferredTo']=d;r['paid']=false;await persist();if(mounted)setState((){});}
   }
   Future<void> backup() async {
-    final p=await SharedPreferences.getInstance();final raw=p.getString(storageKey)??'{}';
-    await Share.shareXFiles([XFile.fromData(utf8.encode(raw),mimeType:'application/json',name:'Begroting-backup.json')],text:'Begroting backup');
+    // Flush the latest in-memory state (including copy/move and audit history)
+    // before reading the JSON that will be shared.
+    await persist();
+    final p = await SharedPreferences.getInstance();
+    final raw = p.getString(storageKey);
+    if (raw == null || raw.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No backup data is available')),
+      );
+      return;
+    }
+    await Share.shareXFiles([
+      XFile.fromData(utf8.encode(raw), mimeType: 'application/json', name: 'Begroting-backup.json'),
+    ], text: 'Begroting backup');
   }
+
   Future<void> restore() async {
-    if(!await authorize())return;
-    final result=await FilePicker.platform.pickFiles(type:FileType.custom,allowedExtensions:['json'],withData:true);
-    if(result==null||result.files.single.bytes==null)return;
-    try{final d=jsonDecode(utf8.decode(result.files.single.bytes!)) as Map<String,dynamic>;final rs=Map<String,dynamic>.from(d['records']??{});for(final k in records.keys){records[k]=(rs[k] as List? ?? []).map((e)=>Map<String,dynamic>.from(e)).toList();}language=d['language']??language;currency=d['currency']??currency;pin=d['pin']??pin;appLock=d['appLock']??appLock;selectedMonth=d['selectedMonth']??selectedMonth;await persist();if(mounted)setState((){});}catch(_){if(mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Invalid backup file')));}
+    if (!await authorize()) return;
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom, allowedExtensions: ['json'], withData: true,
+    );
+    if (result == null || result.files.single.bytes == null) return;
+
+    try {
+      final decoded = jsonDecode(utf8.decode(result.files.single.bytes!));
+      if (decoded is! Map) throw const FormatException('Backup root must be an object');
+      final data = Map<String, dynamic>.from(decoded);
+      final rawRecords = data['records'];
+      if (rawRecords is! Map) throw const FormatException('Missing records');
+
+      // Validate and prepare every category before changing the current data.
+      // This prevents a malformed/partial file from replacing valid user data.
+      final restoredRecords = <String, List<Map<String, dynamic>>>{};
+      for (final key in records.keys) {
+        final value = rawRecords[key];
+        if (value == null) {
+          restoredRecords[key] = <Map<String, dynamic>>[];
+        } else if (value is List) {
+          restoredRecords[key] = value.map((entry) {
+            if (entry is! Map) throw FormatException('Invalid record in $key');
+            return Map<String, dynamic>.from(entry);
+          }).toList();
+        } else {
+          throw FormatException('Invalid category $key');
+        }
+      }
+
+      final rawAudit = data['auditLog'];
+      final restoredAudit = <Map<String, dynamic>>[];
+      if (rawAudit != null) {
+        if (rawAudit is! List) throw const FormatException('Invalid audit history');
+        restoredAudit.addAll(rawAudit.map((entry) {
+          if (entry is! Map) throw const FormatException('Invalid audit entry');
+          return Map<String, dynamic>.from(entry);
+        }));
+      }
+
+      // Commit to memory only after the complete file has passed validation.
+      for (final key in records.keys) {
+        records[key] = restoredRecords[key]!;
+      }
+      auditLog
+        ..clear()
+        ..addAll(restoredAudit);
+      language = (data['language'] ?? language).toString();
+      currency = (data['currency'] ?? currency).toString();
+      pin = (data['pin'] ?? pin).toString();
+      appLock = data['appLock'] is bool ? data['appLock'] as bool : appLock;
+      selectedMonth = (data['selectedMonth'] ?? selectedMonth).toString();
+
+      await persist();
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(language == 'ar' ? 'تمت استعادة النسخة الاحتياطية بنجاح' : 'Backup restored successfully')),
+        );
+      }
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(language == 'ar'
+          ? 'تعذرت استعادة النسخة: الملف غير صالح أو غير مكتمل. لم يتم اعتماد محتوياته.'
+          : 'Could not restore backup: the file is invalid or incomplete. Its contents were not applied.')),
+      );
+    }
   }
   Future<void> settings() async {
     String lang=language, curr=currency;
