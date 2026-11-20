@@ -809,6 +809,8 @@ class _HomePageState extends State<HomePage> {
                 label:Text(language=='ar'?'تعديل':'Edit')),
               TextButton.icon(onPressed:()=>deleteRecord('debts',r),icon:const Icon(Icons.delete_outline,size:16),
                 label:Text(language=='ar'?'حذف':'Delete')),
+              IconButton(tooltip:language=='ar'?'مشاركة الحركة':'Share transaction',
+                onPressed:()=>itemActions('debts',r),icon:const Icon(Icons.share_outlined,size:18)),
             ]),
           ])));
         }),
