@@ -40,6 +40,7 @@ class _HomePageState extends State<HomePage> {
   // Persistent, privacy-local autocomplete memory. Values are scoped by field type.
   final Map<String,List<String>> hintMemory = {};
   Timer? _holdTimer;
+  String _debtSearch = '';
 
   static String _month(DateTime d) => '${d.year}-${d.month.toString().padLeft(2,'0')}';
   Map<String,String> get labels {
@@ -662,6 +663,7 @@ class _HomePageState extends State<HomePage> {
   @override void dispose(){_holdTimer?.cancel();super.dispose();}
   Widget _metric(String title,String value,Color color)=>Expanded(child:Container(padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:color,borderRadius:BorderRadius.circular(14)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontSize:11)),const SizedBox(height:5),FittedBox(fit:BoxFit.scaleDown,child:Text(value,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:14)))])));
   Widget _recordList(String key) {
+    if(key=='debts') return _debtAccountsList();
     final list=forMonth(key);
     if(list.isEmpty && key!='debts')return Center(child:Text(t('empty')));
     return ListView.builder(padding:const EdgeInsets.fromLTRB(12,4,12,90),itemCount:list.length+(key=='debts'?1:0),itemBuilder:(ctx,i){
@@ -709,6 +711,108 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(width:8),
         Column(mainAxisSize:MainAxisSize.min,children:[Text(money(signed),style:TextStyle(fontWeight:FontWeight.bold,color:paid?Colors.grey.shade600:(debtColor??const Color(0xFF245B4B)))),if(['income','fixed','variable','debts','savings','purchases'].contains(key)) IconButton(tooltip:key=='debts'?(language=='ar'?'مشاركة':'Share'):(language=='ar'?'نسخ أو نقل أو مشاركة':'Copy, move or share'),onPressed:()=>itemActions(key,r),icon:const Icon(Icons.more_vert))]),
       ])));
+    });
+  }
+
+
+  String _debtAccountName(Map<String,dynamic> r) {
+    final center=(r['costCenter']??'').toString().trim();
+    return center.isEmpty ? (language=='ar'?'بدون اسم حساب':'Unnamed account') : center;
+  }
+  List<Map<String,dynamic>> _debtsForAccount(String account) => records['debts']!
+      .where((r)=>_debtAccountName(r)==account && monthOf(r).compareTo(selectedMonth)<=0)
+      .toList()..sort((a,b)=>(a['date']??'').toString().compareTo((b['date']??'').toString()));
+  Widget _debtAccountsList() {
+    final all=records['debts']!.where((r)=>monthOf(r).compareTo(selectedMonth)<=0).toList();
+    final names=all.map(_debtAccountName).toSet().toList()..sort((a,b)=>a.toLowerCase().compareTo(b.toLowerCase()));
+    final q=_debtSearch.trim().toLowerCase();
+    final filtered=names.where((n)=>n.toLowerCase().contains(q)).toList();
+    double rem(Map<String,dynamic> r)=>_debtRemainingAsOf(r,selectedMonth);
+    final receivable=all.where((r)=>r['debtKind']=='receivable').fold<double>(0,(v,r)=>v+rem(r));
+    final payable=all.where((r)=>r['debtKind']!='receivable').fold<double>(0,(v,r)=>v+rem(r));
+    return Column(children:[
+      Padding(padding:const EdgeInsets.fromLTRB(12,8,12,4),child:TextField(
+        onChanged:(v)=>setState(()=>_debtSearch=v),
+        decoration:InputDecoration(hintText:language=='ar'?'ابحث باسم صاحب الدين / مركز التكلفة':'Search creditor or debt cost center',
+          prefixIcon:const Icon(Icons.search),suffixIcon:_debtSearch.isEmpty?null:IconButton(icon:const Icon(Icons.clear),onPressed:()=>setState(()=>_debtSearch='')),
+          filled:true,fillColor:Colors.white,border:OutlineInputBorder(borderRadius:BorderRadius.circular(14),borderSide:BorderSide.none)),
+      )),
+      Padding(padding:const EdgeInsets.symmetric(horizontal:12,vertical:5),child:Card(child:Padding(padding:const EdgeInsets.all(12),child:Column(children:[
+        Text(language=='ar'?'ملخص دفتر الديون حتى $selectedMonth':'Debt ledger as of $selectedMonth',style:const TextStyle(fontWeight:FontWeight.bold)),
+        const SizedBox(height:6),_statementLine(language=='ar'?'مستحق لك':'Receivable',money(receivable)),
+        _statementLine(language=='ar'?'مستحق عليك':'Payable',money(payable)),const Divider(),
+        _statementLine(language=='ar'?'صافي مركز الديون':'Net debt position',money(payable-receivable),strong:true),
+      ])))),
+      Expanded(child:filtered.isEmpty?Center(child:Text(language=='ar'?'لا توجد حسابات مطابقة':'No matching debt accounts')):ListView.builder(
+        padding:const EdgeInsets.fromLTRB(12,2,12,90),itemCount:filtered.length,itemBuilder:(ctx,i){
+          final name=filtered[i], entries=_debtsForAccount(name);
+          final owed=entries.where((r)=>r['debtKind']=='receivable').fold<double>(0,(v,r)=>v+rem(r));
+          final due=entries.where((r)=>r['debtKind']!='receivable').fold<double>(0,(v,r)=>v+rem(r));
+          return Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.account_balance_wallet_outlined)),
+            title:Text(name,style:const TextStyle(fontWeight:FontWeight.bold)),
+            subtitle:Text('${language=='ar'?'عدد العمليات':'Transactions'}: ${entries.length}\n${language=='ar'?'له':'Receivable'}: ${money(owed)}  ·  ${language=='ar'?'عليه':'Payable'}: ${money(due)}'),
+            isThreeLine:true,trailing:const Icon(Icons.chevron_right),onTap:()=>_showDebtAccountStatement(name)));
+        })),
+    ]);
+  }
+  String _debtStatementText(String account,List<Map<String,dynamic>> entries,{String? kind}) {
+    final ar=language=='ar'; final out=<String>['Begroting · ${ar?'كشف حساب الديون':'Debt account statement'}',
+      '${ar?'اسم الحساب':'Account'}: $account','${ar?'حتى':'As of'}: $selectedMonth',
+      if(kind!=null) '${ar?'النوع':'Type'}: ${kind=='receivable'?(ar?'له':'Receivable'):(ar?'عليه':'Payable')}','--------------------------------'];
+    double total=0,paid=0;
+    for(final r in entries.where((r)=>kind==null||r['debtKind']==kind)){
+      final amount=(r['amount'] as num?)?.toDouble()??0;
+      out.add('${r['date']??''} | ${r['name']??''} | ${money(amount)} | ${ar?'المتبقي':'Remaining'}: ${money(_debtRemainingAsOf(r,selectedMonth))}');
+      final raw=r['payments'];
+      if(raw is List) for(final p in raw.whereType<Map>()){
+        final date=(p['date']??'').toString();
+        if(date.length>=7&&date.substring(0,7).compareTo(selectedMonth)<=0){
+          final v=(p['amount'] as num?)?.toDouble()??0; paid+=v;
+          out.add('   ${ar?'سداد':'Payment'} $date | ${money(v)}${(p['note']??'').toString().isEmpty?'':' | ${p['note']}'}');
+        }
+      }
+      total+=amount;
+      if((r['note']??'').toString().trim().isNotEmpty)out.add('   ${ar?'ملاحظة':'Note'}: ${r['note']}');
+    }
+    out.add('--------------------------------');
+    out.add('${ar?'إجمالي أصل العمليات':'Original total'}: ${money(total)}');
+    out.add('${ar?'إجمالي السداد':'Payments'}: ${money(paid)}');
+    out.add('${ar?'الرصيد المتبقي':'Remaining'}: ${money(entries.where((r)=>kind==null||r['debtKind']==kind).fold<double>(0,(v,r)=>v+_debtRemainingAsOf(r,selectedMonth)))}');
+    return out.join('\n');
+  }
+  Future<void> _shareDebtStatement(String account,List<Map<String,dynamic>> entries,{String? kind}) async {
+    await Share.share(_debtStatementText(account,entries,kind:kind),subject:'Begroting · $account');
+  }
+  Future<void> _showDebtAccountStatement(String account) async {
+    final entries=_debtsForAccount(account); if(!mounted)return;
+    await showDialog<void>(context:context,builder:(ctx){
+      final receivable=entries.where((r)=>r['debtKind']=='receivable').toList();
+      final payable=entries.where((r)=>r['debtKind']!='receivable').toList();
+      return AlertDialog(title:Text(account),content:SizedBox(width:520,child:SingleChildScrollView(child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+        Text('${language=='ar'?'كشف الحركة حتى':'Account activity through'} $selectedMonth',style:const TextStyle(fontWeight:FontWeight.w600)),
+        const SizedBox(height:8),
+        ...entries.map((r){
+          final kind=r['debtKind']=='receivable'?'receivable':'payable';
+          final color=kind=='receivable'?const Color(0xFFC62828):const Color(0xFF1565C0);
+          final raw=r['payments'];
+          final pays=raw is List?raw.whereType<Map>().where((p){final d=(p['date']??'').toString();return d.length>=7&&d.substring(0,7).compareTo(selectedMonth)<=0;}).toList():<Map>[];
+          return Card(child:Padding(padding:const EdgeInsets.all(10),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+            Text('${r['date']??''} · ${r['name']??''}',style:TextStyle(fontWeight:FontWeight.bold,color:color)),
+            Text('${kind=='receivable'?(language=='ar'?'له':'Receivable'):(language=='ar'?'عليه':'Payable')}: ${money((r['amount'] as num?)??0)} · ${language=='ar'?'المتبقي':'Remaining'}: ${money(_debtRemainingAsOf(r,selectedMonth))}'),
+            if((r['note']??'').toString().isNotEmpty)Text(r['note']),
+            ...pays.map((p)=>Text('↳ ${language=='ar'?'سداد':'Payment'} ${p['date']??''} · ${money((p['amount'] as num?)??0)}${(p['note']??'').toString().isEmpty?'':' · ${p['note']}'}',style:Theme.of(ctx).textTheme.bodySmall)),
+          ])));
+        }),
+        const Divider(),
+        Text('${language=='ar'?'الرصيد له':'Receivable balance'}: ${money(receivable.fold<double>(0,(v,r)=>v+_debtRemainingAsOf(r,selectedMonth)))}'),
+        Text('${language=='ar'?'الرصيد عليه':'Payable balance'}: ${money(payable.fold<double>(0,(v,r)=>v+_debtRemainingAsOf(r,selectedMonth)))}'),
+      ])))),
+      actions:[
+        TextButton.icon(onPressed:()=>_shareDebtStatement(account,entries,kind:'receivable'),icon:const Icon(Icons.print_outlined),label:Text(language=='ar'?'طباعة كشف (له)':'Print receivable')),
+        TextButton.icon(onPressed:()=>_shareDebtStatement(account,entries,kind:'payable'),icon:const Icon(Icons.print_outlined),label:Text(language=='ar'?'طباعة كشف (عليه)':'Print payable')),
+        TextButton.icon(onPressed:()=>_shareDebtStatement(account,entries),icon:const Icon(Icons.share),label:Text(language=='ar'?'كشف كامل':'Full statement')),
+        TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(language=='ar'?'إغلاق':'Close')),
+      ]);
     });
   }
 
