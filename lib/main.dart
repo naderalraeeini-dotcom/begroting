@@ -139,7 +139,7 @@ class _HomePageState extends State<HomePage> {
       actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,List.generate(items.length,(i)=>i).where((i)=>items[i]['selected']==true).toList()),child:Text(language=='ar'?'نسخ المحدد':'Copy selected'))]
     )));
     if(chosen==null){if(mounted)setState(()=>selectedMonth=targetMonth);await persist();return;}
-    for(final i in chosen){final x=items[i];final k=x['key'] as String;final old=x['record'] as Map<String,dynamic>;final day=(old['date']??'$targetMonth-01').toString().substring(8,10);final c=Map<String,dynamic>.from(old)..['id']=_newId()..['date']='$targetMonth-$day';c.remove('deferredTo');records[k]!.add(c);_audit('monthly_copy',k,k,c);}
+    for(final i in chosen){final x=items[i];final k=x['key'] as String;final old=x['record'] as Map<String,dynamic>;final day=(old['date']??'$targetMonth-01').toString().substring(8,10);final c=Map<String,dynamic>.from(old)..['id']=_newId()..['date']='$targetMonth-$day';if(c.containsKey('paid'))c['paid']=false;c.remove('deferredTo');records[k]!.add(c);_audit('monthly_copy',k,k,c);}
     await persist();if(mounted)setState(()=>selectedMonth=targetMonth);
   }
   Future<void> itemActions(String source,Map<String,dynamic> r) async {
