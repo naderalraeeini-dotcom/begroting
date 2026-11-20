@@ -542,15 +542,18 @@ class _HomePageState extends State<HomePage> {
   String _prevMonth(String month){final p=month.split('-');final d=DateTime(int.parse(p[0]),int.parse(p[1]),1);return _month(DateTime(d.year,d.month-1,1));}
   String _costCenter(Map<String,dynamic> r){final c=(r['costCenter']??'').toString().trim();return c.isEmpty?(language=='ar'?'غير مصنف':'Unassigned'):c;}
   Widget _aLine(String label,String value,{String? detail})=>Padding(padding:const EdgeInsets.symmetric(vertical:6),child:Row(children:[Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(label,style:const TextStyle(fontWeight:FontWeight.w600)),if(detail!=null)Text(detail,style:Theme.of(context).textTheme.bodySmall)])),Text(value,style:const TextStyle(fontWeight:FontWeight.bold))]));
+  Widget _aMetric(String title,String value)=>Card(child:Padding(padding:const EdgeInsets.all(10),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:Theme.of(context).textTheme.bodySmall),const Spacer(),FittedBox(fit:BoxFit.scaleDown,child:Text(value,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16)))])));
   Widget _aSection(String title,List<Widget> children)=>Card(child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16,color:Color(0xFF173F35))),const Divider(),...children])));
   Widget _analytics(){
     final prev=_prevMonth(selectedMonth), inc=_sumMonth('income',selectedMonth), fixed=_sumMonth('fixed',selectedMonth), variable=_sumMonth('variable',selectedMonth);
     final exp=fixed+variable, net=inc-exp, prevInc=_sumMonth('income',prev), prevExp=_sumMonth('fixed',prev)+_sumMonth('variable',prev);
     final deposits=_savingMonth(selectedMonth,'in'), withdrawals=_savingMonth(selectedMonth,'out'), debtMonth=_sumMonth('debts',selectedMonth);
-    final debtOpen=records['debts']!.fold(0.0,(s,r){final a=(r['amount'] as num?)?.toDouble()??0,p=(r['repaid'] as num?)?.toDouble()??0;return s+(a-p).clamp(0.0,a);});
-    final centers=<String,double>{};
+    final debtOpen=records['debts']!.fold<double>(0.0,(s,r){final a=(r['amount'] as num?)?.toDouble()??0,p=(r['repaid'] as num?)?.toDouble()??0;return s+(a-p).clamp(0.0,a).toDouble();});
+    final centers=<String,double>{}, incomeCenters=<String,double>{};
+    for(final r in records['income']!.where((r)=>(r['date']??'').toString().startsWith(selectedMonth))){final c=_costCenter(r);incomeCenters[c]=(incomeCenters[c]??0)+((r['amount'] as num?)?.toDouble()??0);}
     for(final key in ['fixed','variable']){for(final r in records[key]!.where((r)=>(r['date']??'').toString().startsWith(selectedMonth))){final c=_costCenter(r);centers[c]=(centers[c]??0)+((r['amount'] as num?)?.toDouble()??0);}}
     final centerRows=centers.entries.toList()..sort((a,b)=>b.value.compareTo(a.value));
+    final incomeCenterRows=incomeCenters.entries.toList()..sort((a,b)=>b.value.compareTo(a.value));
     final groups=<String,Map<String,dynamic>>{};
     for(final key in ['income','fixed','variable']){for(final r in records[key]!){
       final name=(r['name']??'').toString().trim();if(name.isEmpty)continue;
@@ -567,10 +570,10 @@ class _HomePageState extends State<HomePage> {
     return ListView(padding:const EdgeInsets.fromLTRB(12,4,12,90),children:[
       Text((language=='ar'?'تحليل الشهر ':'Analysis · ')+selectedMonth,style:const TextStyle(fontSize:18,fontWeight:FontWeight.bold,color:Color(0xFF173F35))),
       GridView.count(crossAxisCount:2,shrinkWrap:true,physics:const NeverScrollableScrollPhysics(),childAspectRatio:2.1,crossAxisSpacing:8,mainAxisSpacing:8,children:[
-        _aSection(t('incomeTotal'),[Text(money(inc),style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16))]),
-        _aSection(t('expenseTotal'),[Text(money(exp),style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16))]),
-        _aSection(t('balance'),[Text(money(net),style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16))]),
-        _aSection(language=='ar'?'المصروفات / الدخل':'Expenses / income',[Text(inc>0?(exp/inc*100).toStringAsFixed(1)+'%':'—',style:const TextStyle(fontWeight:FontWeight.bold,fontSize:16))]),
+        _aMetric(t('incomeTotal'),money(inc)),
+        _aMetric(t('expenseTotal'),money(exp)),
+        _aMetric(t('balance'),money(net)),
+        _aMetric(language=='ar'?'المصروفات / الدخل':'Expenses / income',inc>0?(exp/inc*100).toStringAsFixed(1)+'%':'—'),
       ]),
       _aSection(t('monthCompare'),[
         _aLine(t('incomeTotal'),money(inc),detail:t('previousMonth')+': '+money(prevInc)),
@@ -578,6 +581,7 @@ class _HomePageState extends State<HomePage> {
         _aLine(t('balance'),money(net),detail:(language=='ar'?'فرق الرصيد: ':'Balance change: ')+money(net-(prevInc-prevExp))),
         ...chartMonths.map((m)=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(m,style:const TextStyle(fontWeight:FontWeight.w600)),bar(t('incomeTotal'),_sumMonth('income',m),const Color(0xFF2E7D5B)),bar(t('expenseTotal'),_sumMonth('fixed',m)+_sumMonth('variable',m),const Color(0xFFD97745)),const Divider(height:12)])),
       ]),
+      _aSection(language=='ar'?'مراكز تكلفة الدخل':'Income cost centers',incomeCenterRows.isEmpty?[Text(language=='ar'?'لا توجد بيانات دخل مصنفة':'No classified income')]:incomeCenterRows.map((e)=>_aLine(e.key,money(e.value),detail:inc>0?(e.value/inc*100).toStringAsFixed(1)+'%':'')).toList()),
       _aSection(t('centers'),centerRows.isEmpty?[Text(language=='ar'?'لا توجد بيانات مصنفة':'No classified expenses')]:centerRows.map((e)=>_aLine(e.key,money(e.value),detail:exp>0?(e.value/exp*100).toStringAsFixed(1)+'%':'')).toList()),
       _aSection(t('incomeRecurring'),ri.isEmpty?[Text(language=='ar'?'لا توجد بنود دخل متكررة بعد':'No recurring income items yet')]:ri.map((g)=>_aLine(g['name'] as String,money(g['current'] as double),detail:g['center'].toString()+' · '+(g['months'] as Set<String>).length.toString()+' '+t('occurrences')+' · '+t('periodTotal')+': '+money(g['total'] as double))).toList()),
       _aSection(t('expenseRecurring'),re.isEmpty?[Text(language=='ar'?'لا توجد بنود مصروفات متكررة بعد':'No recurring expense items yet')]:re.map((g)=>_aLine(g['name'] as String,money(g['current'] as double),detail:t(g['key'] as String)+' · '+g['center'].toString()+' · '+(g['months'] as Set<String>).length.toString()+' '+t('occurrences')+' · '+t('periodTotal')+': '+money(g['total'] as double))).toList()),
