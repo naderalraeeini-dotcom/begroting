@@ -522,6 +522,7 @@ class _HomePageState extends State<HomePage> {
           Text(r['name']??'',style:TextStyle(fontWeight:FontWeight.bold,decoration:paid?TextDecoration.lineThrough:null,color:paid?Colors.grey.shade600:null)),
           if((r['date']??'').toString().isNotEmpty)Text('${t('date')}: ${r['date']}',style:Theme.of(context).textTheme.bodySmall),
           if((r['note']??'').toString().isNotEmpty)Text(r['note'],style:Theme.of(context).textTheme.bodySmall),
+          if((r['costCenter']??'').toString().trim().isNotEmpty)Text(t('costCenter')+': '+r['costCenter'].toString(),style:Theme.of(context).textTheme.bodySmall),
           if(deferred)Chip(label:Text('${t('deferred')}: ${r['deferredTo']}'),visualDensity:VisualDensity.compact),
           if(key=='income')Text(t(r['type']??'other'),style:Theme.of(context).textTheme.bodySmall),
           if(key=='debts')Text('${t('debtRemaining')}: ${money((amount-(r['repaid'] as num? ?? 0)).clamp(0,amount))}'),
@@ -548,6 +549,7 @@ class _HomePageState extends State<HomePage> {
     final prev=_prevMonth(selectedMonth), inc=_sumMonth('income',selectedMonth), fixed=_sumMonth('fixed',selectedMonth), variable=_sumMonth('variable',selectedMonth);
     final exp=fixed+variable, net=inc-exp, prevInc=_sumMonth('income',prev), prevExp=_sumMonth('fixed',prev)+_sumMonth('variable',prev);
     final deposits=_savingMonth(selectedMonth,'in'), withdrawals=_savingMonth(selectedMonth,'out'), debtMonth=_sumMonth('debts',selectedMonth);
+    final savingsBalance=records['savings']!.fold<double>(0.0,(s,r)=>s+(((r['kind']??'in')=='out'?-1:1)*((r['amount'] as num?)?.toDouble()??0)));
     final debtOpen=records['debts']!.fold<double>(0.0,(s,r){final a=(r['amount'] as num?)?.toDouble()??0,p=(r['repaid'] as num?)?.toDouble()??0;return s+(a-p).clamp(0.0,a).toDouble();});
     final centers=<String,double>{}, incomeCenters=<String,double>{};
     for(final r in records['income']!.where((r)=>(r['date']??'').toString().startsWith(selectedMonth))){final c=_costCenter(r);incomeCenters[c]=(incomeCenters[c]??0)+((r['amount'] as num?)?.toDouble()??0);}
@@ -564,7 +566,7 @@ class _HomePageState extends State<HomePage> {
     }}
     final recurring=groups.values.where((g)=>(g['months'] as Set<String>).length>=2).toList()..sort((a,b)=>(b['total'] as double).compareTo(a['total'] as double));
     final ri=recurring.where((g)=>g['key']=='income').toList(), re=recurring.where((g)=>g['key']!='income').toList();
-    final mlist=months.toList()..sort((a,b)=>b.compareTo(a));final chartMonths=mlist.take(6).toList().reversed;
+    final mlist=months.toList()..sort((a,b)=>b.compareTo(a));final chartMonths=mlist.toList().reversed;
     final maxValue=chartMonths.fold<double>(0,(m,x){final a=_sumMonth('income',x),b=_sumMonth('fixed',x)+_sumMonth('variable',x);return [m,a,b].reduce((v,w)=>v>w?v:w);});
     Widget bar(String label,double v,Color color)=>Padding(padding:const EdgeInsets.symmetric(vertical:3),child:Row(children:[SizedBox(width:65,child:Text(label,style:const TextStyle(fontSize:11))),Expanded(child:LinearProgressIndicator(value:maxValue==0?0:(v/maxValue).clamp(0.0,1.0),minHeight:8,color:color,backgroundColor:color.withValues(alpha:0.12))),const SizedBox(width:6),SizedBox(width:82,child:Text(money(v),textAlign:TextAlign.end,style:const TextStyle(fontSize:10)))]));
     return ListView(padding:const EdgeInsets.fromLTRB(12,4,12,90),children:[
@@ -586,7 +588,7 @@ class _HomePageState extends State<HomePage> {
       _aSection(t('incomeRecurring'),ri.isEmpty?[Text(language=='ar'?'لا توجد بنود دخل متكررة بعد':'No recurring income items yet')]:ri.map((g)=>_aLine(g['name'] as String,money(g['current'] as double),detail:g['center'].toString()+' · '+(g['months'] as Set<String>).length.toString()+' '+t('occurrences')+' · '+t('periodTotal')+': '+money(g['total'] as double))).toList()),
       _aSection(t('expenseRecurring'),re.isEmpty?[Text(language=='ar'?'لا توجد بنود مصروفات متكررة بعد':'No recurring expense items yet')]:re.map((g)=>_aLine(g['name'] as String,money(g['current'] as double),detail:t(g['key'] as String)+' · '+g['center'].toString()+' · '+(g['months'] as Set<String>).length.toString()+' '+t('occurrences')+' · '+t('periodTotal')+': '+money(g['total'] as double))).toList()),
       _aSection(t('debtAnalysis'),[_aLine(language=='ar'?'ديون مسجلة هذا الشهر':'New debt this month',money(debtMonth)),_aLine(language=='ar'?'الديون المتبقية':'Outstanding debt',money(debtOpen))]),
-      _aSection(t('savingsAnalysis'),[_aLine(language=='ar'?'الإيداعات':'Deposits',money(deposits)),_aLine(language=='ar'?'السحوبات':'Withdrawals',money(withdrawals)),_aLine(language=='ar'?'صافي الادخار':'Net savings',money(deposits-withdrawals))]),
+      _aSection(t('savingsAnalysis'),[_aLine(language=='ar'?'الإيداعات':'Deposits',money(deposits)),_aLine(language=='ar'?'السحوبات':'Withdrawals',money(withdrawals)),_aLine(language=='ar'?'صافي حركة الشهر':'Monthly net movement',money(deposits-withdrawals)),_aLine(language=='ar'?'رصيد الادخار التراكمي':'Cumulative savings balance',money(savingsBalance))]),
       Padding(padding:const EdgeInsets.all(8),child:Text(language=='ar'?'البنود القديمة بلا مركز تكلفة تظهر ضمن «غير مصنف». ويُكتشف التكرار عند ظهور الاسم والقائمة ومركز التكلفة في شهرين مختلفين على الأقل.':'Legacy items without a cost center are shown as Unassigned. Recurrence means the same item, list and cost center appear in at least two different months.',style:Theme.of(context).textTheme.bodySmall)),
     ]);
   }
