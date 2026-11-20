@@ -236,10 +236,11 @@ class _HomePageState extends State<HomePage> {
       // This prevents a malformed/partial file from replacing valid user data.
       final restoredRecords = <String, List<Map<String, dynamic>>>{};
       for (final key in records.keys) {
+        if (!rawRecords.containsKey(key)) {
+          throw FormatException('Backup is missing category $key');
+        }
         final value = rawRecords[key];
-        if (value == null) {
-          restoredRecords[key] = <Map<String, dynamic>>[];
-        } else if (value is List) {
+        if (value is List) {
           restoredRecords[key] = value.map((entry) {
             if (entry is! Map) throw FormatException('Invalid record in $key');
             return Map<String, dynamic>.from(entry);
@@ -251,7 +252,11 @@ class _HomePageState extends State<HomePage> {
 
       final rawAudit = data['auditLog'];
       final restoredAudit = <Map<String, dynamic>>[];
-      if (rawAudit != null) {
+      if (rawAudit == null) {
+        // Legacy backups predate the audit log. Keep the current audit history
+        // rather than silently erasing newer copy/move events during restore.
+        restoredAudit.addAll(auditLog.map((entry) => Map<String, dynamic>.from(entry)));
+      } else {
         if (rawAudit is! List) throw const FormatException('Invalid audit history');
         restoredAudit.addAll(rawAudit.map((entry) {
           if (entry is! Map) throw const FormatException('Invalid audit entry');
