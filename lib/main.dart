@@ -41,9 +41,9 @@ class _HomePageState extends State<HomePage> {
 
   static String _month(DateTime d) => '${d.year}-${d.month.toString().padLeft(2,'0')}';
   Map<String,String> get labels {
-    const ar = {'income':'الدخل','fixed':'الالتزامات الثابتة','variable':'المصروفات المتغيرة','debts':'الديون','savings':'دفتر الادخار','purchases':'المشتريات','statement':'كشف الحساب','analytics':'التحليل والمؤشرات','costCenter':'مركز التكلفة','incomeRecurring':'الدخل المتكرر','expenseRecurring':'المصروفات المتكررة','centers':'مراكز التكلفة','monthCompare':'مقارنة الأشهر','debtAnalysis':'تحليل الديون','savingsAnalysis':'تحليل الادخار','previousMonth':'الشهر السابق','occurrences':'أشهر التكرار','periodTotal':'إجمالي الفترة','add':'إضافة بيان','name':'البيان / الاسم','amount':'المبلغ','date':'التاريخ','note':'ملاحظات','save':'حفظ','cancel':'إلغاء','paid':'مسدد','unpaid':'غير مسدد','edit':'تعديل','delete':'حذف','settings':'الإعدادات','language':'اللغة','currency':'العملة','backup':'نسخة احتياطية','restore':'استعادة نسخة','month':'الشهر','balance':'الرصيد الشهري','incomeTotal':'إجمالي الدخل','expenseTotal':'إجمالي المصروفات','type':'نوع الدخل','due':'تاريخ الاستحقاق','defer':'ترحيل','deferred':'بند مؤجل','next':'الشهر القادم','dateTarget':'تاريخ محدد','share':'مشاركة','empty':'لا توجد بيانات لهذا الشهر','lock':'قفل التطبيق','pin':'رمز من 4 أرقام','confirm':'هل تريد المتابعة؟','ok':'موافق','error':'يرجى التحقق من البيانات','partner':'راتب الشريك','family':'راتب فرد في العائلة','salary':'راتب','extra':'راتب إضافي','second':'دخل عمل إضافي','fees':'أتعاب خدمات','sales':'مبيعات','gift':'هدية','social':'الضمان الاجتماعي','refund':'مبالغ مستردة','debtIncome':'دين مستلم','other':'أخرى','savingsIn':'إيداع ادخار','savingsOut':'سحب من الادخار','security':'تأكيد التعديل','tap':'موافق فقط','pinAuth':'رمز التحقق','deleteAsk':'حذف هذا البيان؟','debtRemaining':'المتبقي','debtKind':'نوع الدين','debtOwedToMe':'له (مدين)','debtOwedByMe':'عليه (دائن)','debtReceivable':'إجمالي الديون لك','debtPayable':'إجمالي الديون عليك','debtNet':'صافي مركز الديون','debtTotal':'إجمالي الدين المتبقي','separate':'دفتر الادخار مستقل ولا يدخل في إجمالي الدخل والمصروفات.'};
-    const nl = {'income':'Inkomsten','fixed':'Vaste verplichtingen','variable':'Variabele uitgaven','debts':'Schulden','savings':'Spaarboek','purchases':'Toekomstige aankopen','statement':'Overzicht','analytics':'Analyse & indicatoren','costCenter':'Kostenplaats','incomeRecurring':'Terugkerende inkomsten','expenseRecurring':'Terugkerende uitgaven','centers':'Kostenplaatsen','monthCompare':'Maandvergelijking','debtAnalysis':'Schuldenanalyse','savingsAnalysis':'Spaaranalyse','previousMonth':'Vorige maand','occurrences':'Herhalingsmaanden','periodTotal':'Periode totaal','add':'Item toevoegen','name':'Naam / omschrijving','amount':'Bedrag','date':'Datum','note':'Notities','save':'Opslaan','cancel':'Annuleren','paid':'Betaald','unpaid':'Openstaand','edit':'Bewerken','delete':'Verwijderen','settings':'Instellingen','language':'Taal','currency':'Valuta','backup':'Back-up maken','restore':'Back-up herstellen','month':'Maand','balance':'Maandsaldo','incomeTotal':'Totale inkomsten','expenseTotal':'Totale uitgaven','type':'Inkomstensoort','due':'Vervaldatum','defer':'Uitstellen','deferred':'Uitgesteld','next':'Volgende maand','dateTarget':'Specifieke datum','share':'Delen','empty':'Geen gegevens voor deze maand','lock':'App-vergrendeling','pin':'Pincode van 4 cijfers','confirm':'Doorgaan?','ok':'OK','error':'Controleer de gegevens','partner':'Salaris partner','family':'Salaris familielid','salary':'Salaris','extra':'Extra salaris','second':'Bijbaan','fees':'Dienstverlening','sales':'Verkoop','gift':'Cadeau','social':'Sociale uitkering','refund':'Terugbetaling','debtIncome':'Ontvangen lening','other':'Overig','savingsIn':'Spaarstorting','savingsOut':'Spaaropname','security':'Bewerkingsbevestiging','tap':'Alleen OK','pinAuth':'Pincode','deleteAsk':'Dit item verwijderen?','debtRemaining':'Resterend','debtKind':'Type schuld','debtOwedToMe':'Te ontvangen (debiteur)','debtOwedByMe':'Te betalen (crediteur)','debtReceivable':'Totaal te ontvangen','debtPayable':'Totaal te betalen','debtNet':'Netto schuldenpositie','debtTotal':'Totale openstaande schuld','separate':'Het spaarboek telt niet mee in inkomsten of uitgaven.'};
-    const en = {'income':'Income','fixed':'Fixed obligations','variable':'Variable expenses','debts':'Debts','savings':'Savings ledger','purchases':'Future purchases','statement':'Statement','analytics':'Analytics & indicators','costCenter':'Cost center','incomeRecurring':'Recurring income','expenseRecurring':'Recurring expenses','centers':'Cost centers','monthCompare':'Monthly comparison','debtAnalysis':'Debt analysis','savingsAnalysis':'Savings analysis','previousMonth':'Previous month','occurrences':'Recurring months','periodTotal':'Period total','add':'Add item','name':'Name / description','amount':'Amount','date':'Date','note':'Notes','save':'Save','cancel':'Cancel','paid':'Paid','unpaid':'Unpaid','edit':'Edit','delete':'Delete','settings':'Settings','language':'Language','currency':'Currency','backup':'Create backup','restore':'Restore backup','month':'Month','balance':'Monthly balance','incomeTotal':'Total income','expenseTotal':'Total expenses','type':'Income type','due':'Due date','defer':'Defer','deferred':'Deferred item','next':'Next month','dateTarget':'Specific date','share':'Share','empty':'No entries for this month','lock':'App lock','pin':'4-digit PIN','confirm':'Continue?','ok':'OK','error':'Check the entered values','partner':'Partner salary','family':'Family member salary','salary':'Salary','extra':'Extra salary','second':'Secondary job','fees':'Service fees','sales':'Sales','gift':'Gift','social':'Social security','refund':'Refunds','debtIncome':'Debt received','other':'Other','savingsIn':'Savings deposit','savingsOut':'Savings withdrawal','security':'Edit confirmation','tap':'Tap OK only','pinAuth':'PIN','deleteAsk':'Delete this item?','debtRemaining':'Remaining','debtKind':'Debt type','debtOwedToMe':'Owed to me (debit)','debtOwedByMe':'I owe (credit)','debtReceivable':'Total receivable','debtPayable':'Total payable','debtNet':'Net debt position','debtTotal':'Total outstanding debt','separate':'Savings are separate and excluded from income/expense totals.'};
+    const ar = {'income':'الدخل','fixed':'الالتزامات الثابتة','variable':'المصروفات المتغيرة','debts':'الديون','savings':'دفتر الادخار','purchases':'المشتريات','statement':'كشف الحساب','analytics':'التحليل والمؤشرات','costCenter':'مركز التكلفة','incomeRecurring':'الدخل المتكرر','expenseRecurring':'المصروفات المتكررة','centers':'مراكز التكلفة','monthCompare':'مقارنة الأشهر','debtAnalysis':'تحليل الديون','savingsAnalysis':'تحليل الادخار','previousMonth':'الشهر السابق','occurrences':'أشهر التكرار','periodTotal':'إجمالي الفترة','add':'إضافة بيان','name':'البيان / الاسم','amount':'المبلغ','date':'التاريخ','note':'ملاحظات','save':'حفظ','cancel':'إلغاء','paid':'مسدد','unpaid':'غير مسدد','edit':'تعديل','delete':'حذف','settings':'الإعدادات','language':'اللغة','currency':'العملة','backup':'نسخة احتياطية','restore':'استعادة نسخة','month':'الشهر','balance':'الرصيد الشهري','incomeTotal':'إجمالي الدخل','expenseTotal':'إجمالي المصروفات','type':'نوع الدخل','due':'تاريخ الاستحقاق','defer':'ترحيل','deferred':'بند مؤجل','next':'الشهر القادم','dateTarget':'تاريخ محدد','share':'مشاركة','empty':'لا توجد بيانات لهذا الشهر','lock':'قفل التطبيق','pin':'رمز من 4 أرقام','confirm':'هل تريد المتابعة؟','ok':'موافق','error':'يرجى التحقق من البيانات','partner':'راتب الشريك','family':'راتب فرد في العائلة','salary':'راتب','extra':'راتب إضافي','second':'دخل عمل إضافي','fees':'أتعاب خدمات','sales':'مبيعات','gift':'هدية','social':'الضمان الاجتماعي','refund':'مبالغ مستردة','debtIncome':'دين مستلم','other':'أخرى','savingsIn':'إيداع ادخار','savingsOut':'سحب من الادخار','security':'تأكيد التعديل','tap':'موافق فقط','pinAuth':'رمز التحقق','deleteAsk':'حذف هذا البيان؟','debtRemaining':'المتبقي','debtKind':'نوع الدين','debtOwedToMe':'له (مدين)','debtOwedByMe':'عليه (دائن)','debtReceivable':'إجمالي الديون لك','debtPayable':'إجمالي الديون عليك','debtNet':'صافي مركز الديون','debtTotal':'إجمالي الدين المتبقي','debtPay':'تسجيل سداد','debtHistory':'سجل السداد','debtAsOf':'الرصيد حتى هذا الشهر','debtPaymentDate':'تاريخ السداد','debtPaymentAmount':'مبلغ السداد','debtPaymentNote':'ملاحظة السداد','debtPaymentSaved':'تم تسجيل السداد','debtPaymentTooHigh':'مبلغ السداد أكبر من الرصيد المتبقي','separate':'دفتر الادخار مستقل ولا يدخل في إجمالي الدخل والمصروفات.'};
+    const nl = {'income':'Inkomsten','fixed':'Vaste verplichtingen','variable':'Variabele uitgaven','debts':'Schulden','savings':'Spaarboek','purchases':'Toekomstige aankopen','statement':'Overzicht','analytics':'Analyse & indicatoren','costCenter':'Kostenplaats','incomeRecurring':'Terugkerende inkomsten','expenseRecurring':'Terugkerende uitgaven','centers':'Kostenplaatsen','monthCompare':'Maandvergelijking','debtAnalysis':'Schuldenanalyse','savingsAnalysis':'Spaaranalyse','previousMonth':'Vorige maand','occurrences':'Herhalingsmaanden','periodTotal':'Periode totaal','add':'Item toevoegen','name':'Naam / omschrijving','amount':'Bedrag','date':'Datum','note':'Notities','save':'Opslaan','cancel':'Annuleren','paid':'Betaald','unpaid':'Openstaand','edit':'Bewerken','delete':'Verwijderen','settings':'Instellingen','language':'Taal','currency':'Valuta','backup':'Back-up maken','restore':'Back-up herstellen','month':'Maand','balance':'Maandsaldo','incomeTotal':'Totale inkomsten','expenseTotal':'Totale uitgaven','type':'Inkomstensoort','due':'Vervaldatum','defer':'Uitstellen','deferred':'Uitgesteld','next':'Volgende maand','dateTarget':'Specifieke datum','share':'Delen','empty':'Geen gegevens voor deze maand','lock':'App-vergrendeling','pin':'Pincode van 4 cijfers','confirm':'Doorgaan?','ok':'OK','error':'Controleer de gegevens','partner':'Salaris partner','family':'Salaris familielid','salary':'Salaris','extra':'Extra salaris','second':'Bijbaan','fees':'Dienstverlening','sales':'Verkoop','gift':'Cadeau','social':'Sociale uitkering','refund':'Terugbetaling','debtIncome':'Ontvangen lening','other':'Overig','savingsIn':'Spaarstorting','savingsOut':'Spaaropname','security':'Bewerkingsbevestiging','tap':'Alleen OK','pinAuth':'Pincode','deleteAsk':'Dit item verwijderen?','debtRemaining':'Resterend','debtKind':'Type schuld','debtOwedToMe':'Te ontvangen (debiteur)','debtOwedByMe':'Te betalen (crediteur)','debtReceivable':'Totaal te ontvangen','debtPayable':'Totaal te betalen','debtNet':'Netto schuldenpositie','debtTotal':'Totale openstaande schuld','debtPay':'Betaling registreren','debtHistory':'Betalingsgeschiedenis','debtAsOf':'Saldo tot deze maand','debtPaymentDate':'Betaaldatum','debtPaymentAmount':'Bedrag van betaling','debtPaymentNote':'Betalingsnotitie','debtPaymentSaved':'Betaling geregistreerd','debtPaymentTooHigh':'Het betalingsbedrag is hoger dan het resterende saldo','separate':'Het spaarboek telt niet mee in inkomsten of uitgaven.'};
+    const en = {'income':'Income','fixed':'Fixed obligations','variable':'Variable expenses','debts':'Debts','savings':'Savings ledger','purchases':'Future purchases','statement':'Statement','analytics':'Analytics & indicators','costCenter':'Cost center','incomeRecurring':'Recurring income','expenseRecurring':'Recurring expenses','centers':'Cost centers','monthCompare':'Monthly comparison','debtAnalysis':'Debt analysis','savingsAnalysis':'Savings analysis','previousMonth':'Previous month','occurrences':'Recurring months','periodTotal':'Period total','add':'Add item','name':'Name / description','amount':'Amount','date':'Date','note':'Notes','save':'Save','cancel':'Cancel','paid':'Paid','unpaid':'Unpaid','edit':'Edit','delete':'Delete','settings':'Settings','language':'Language','currency':'Currency','backup':'Create backup','restore':'Restore backup','month':'Month','balance':'Monthly balance','incomeTotal':'Total income','expenseTotal':'Total expenses','type':'Income type','due':'Due date','defer':'Defer','deferred':'Deferred item','next':'Next month','dateTarget':'Specific date','share':'Share','empty':'No entries for this month','lock':'App lock','pin':'4-digit PIN','confirm':'Continue?','ok':'OK','error':'Check the entered values','partner':'Partner salary','family':'Family member salary','salary':'Salary','extra':'Extra salary','second':'Secondary job','fees':'Service fees','sales':'Sales','gift':'Gift','social':'Social security','refund':'Refunds','debtIncome':'Debt received','other':'Other','savingsIn':'Savings deposit','savingsOut':'Savings withdrawal','security':'Edit confirmation','tap':'Tap OK only','pinAuth':'PIN','deleteAsk':'Delete this item?','debtRemaining':'Remaining','debtKind':'Debt type','debtOwedToMe':'Owed to me (debit)','debtOwedByMe':'I owe (credit)','debtReceivable':'Total receivable','debtPayable':'Total payable','debtNet':'Net debt position','debtTotal':'Total outstanding debt','debtPay':'Record payment','debtHistory':'Payment history','debtAsOf':'Balance through this month','debtPaymentDate':'Payment date','debtPaymentAmount':'Payment amount','debtPaymentNote':'Payment note','debtPaymentSaved':'Payment recorded','debtPaymentTooHigh':'Payment amount exceeds the remaining balance','separate':'Savings are separate and excluded from income/expense totals.'};
     return language == 'ar' ? ar : language == 'en' ? en : nl;
   }
   String t(String k) => labels[k] ?? k;
@@ -74,7 +74,73 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() { super.initState(); load(); }
   String monthOf(Map<String,dynamic> r) => (r['date'] ?? selectedMonth).toString().substring(0,7);
-  List<Map<String,dynamic>> forMonth(String key) => records[key]!.where((r) => monthOf(r) == selectedMonth || (key == 'purchases' && r['deferredTo'] != null && r['deferredTo'].toString().startsWith(selectedMonth))).toList();
+  List<Map<String,dynamic>> forMonth(String key) {
+    // Debts form a continuous ledger and are not copied into monthly statements.
+    if (key == 'debts') {
+      final visible = records[key]!.where((r) => monthOf(r).compareTo(selectedMonth) <= 0).toList();
+      visible.sort((a,b) => (b['date'] ?? '').toString().compareTo((a['date'] ?? '').toString()));
+      return visible;
+    }
+    return records[key]!.where((r) => monthOf(r) == selectedMonth || (key == 'purchases' && r['deferredTo'] != null && r['deferredTo'].toString().startsWith(selectedMonth))).toList();
+  }
+  double _debtRepaidAsOf(Map<String,dynamic> r, String month) {
+    final raw = r['payments'];
+    if (raw is! List) return (r['repaid'] as num?)?.toDouble() ?? 0;
+    var total = (r['repaid'] as num?)?.toDouble() ?? 0;
+    for (final entry in raw) {
+      if (entry is! Map) continue;
+      final date = (entry['date'] ?? '').toString();
+      if (date.length >= 7 && date.substring(0,7).compareTo(month) <= 0) {
+        total += (entry['amount'] as num?)?.toDouble() ?? 0;
+      }
+    }
+    return total;
+  }
+  double _debtRemainingAsOf(Map<String,dynamic> r, String month) {
+    final amount = (r['amount'] as num?)?.toDouble() ?? 0;
+    return (amount - _debtRepaidAsOf(r, month)).clamp(0.0, amount).toDouble();
+  }
+  Future<void> recordDebtPayment(Map<String,dynamic> debt) async {
+    if (!await authorize()) return;
+    final remaining = _debtRemainingAsOf(debt, selectedMonth);
+    if (remaining <= 0) return;
+    final amountController = TextEditingController();
+    final noteController = TextEditingController();
+    String date = '$selectedMonth-01';
+    String error = '';
+    Map<String,dynamic>? result;
+    try {
+      result = await showDialog<Map<String,dynamic>>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
+        title:Text(t('debtPay')),
+        content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+          Text('${debt['name'] ?? ''} · ${t('debtAsOf')}: ${money(remaining)}'),
+          TextField(controller:amountController,keyboardType:const TextInputType.numberWithOptions(decimal:true),decoration:InputDecoration(labelText:t('debtPaymentAmount'))),
+          ListTile(contentPadding:EdgeInsets.zero,title:Text('${t('debtPaymentDate')}: $date'),trailing:const Icon(Icons.calendar_month),onTap:()async{
+            final parts=selectedMonth.split('-');final first=DateTime(int.parse(parts[0]),int.parse(parts[1]),1);final last=DateTime(first.year,first.month+1,0);
+            final picked=await showDatePicker(context:ctx,initialDate:first,firstDate:first,lastDate:last);
+            if(picked!=null)setD(()=>date='${picked.year}-${picked.month.toString().padLeft(2,'0')}-${picked.day.toString().padLeft(2,'0')}');
+          }),
+          TextField(controller:noteController,minLines:1,maxLines:2,decoration:InputDecoration(labelText:t('debtPaymentNote'))),
+          if(error.isNotEmpty)Text(error,style:TextStyle(color:Theme.of(ctx).colorScheme.error)),
+        ])),
+        actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:(){
+          final value=double.tryParse(amountController.text.trim().replaceAll(',','.'));
+          if(value==null||!value.isFinite||value<=0){setD(()=>error=t('error'));return;}
+          if(value>remaining+0.000001){setD(()=>error=t('debtPaymentTooHigh'));return;}
+          Navigator.pop(ctx,{'id':_newId(),'date':date,'amount':value,'note':noteController.text.trim()});
+        },child:Text(t('save')))],
+      )));
+    } finally { amountController.dispose(); noteController.dispose(); }
+    if(result==null)return;
+    final payments = debt['payments'] is List
+      ? (debt['payments'] as List).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).toList()
+      : <Map<String,dynamic>>[];
+    payments.add(result);
+    debt['payments']=payments;
+    _audit('debt_payment','debts','debts',{'debtId':debt['id'],'payment':result});
+    await persist();
+    if(mounted){setState((){});ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(t('debtPaymentSaved'))));}
+  }
   double sum(String key) => forMonth(key).fold(0.0, (s,r) => s + ((r['amount'] as num?)?.toDouble() ?? 0));
   double get totalIncome => sum('income');
   double get totalExpenses => sum('fixed') + sum('variable');
@@ -289,6 +355,10 @@ class _HomePageState extends State<HomePage> {
   Future<void> itemActions(String source, Map<String, dynamic> record) async {
     const categories = ['income', 'fixed', 'variable', 'debts', 'savings', 'purchases'];
     if (!categories.contains(source)) return;
+    if (source == 'debts') {
+      await Share.share('${record['name'] ?? ''}\\n${money((record['amount'] as num?) ?? 0)}\\n${record['date'] ?? ''}\\n${record['note'] ?? ''}', subject: 'Begroting · ${record['name'] ?? ''}');
+      return;
+    }
     final action = await showModalBottomSheet<String>(context: context, builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
       ListTile(leading: const Icon(Icons.copy), title: Text(language == 'ar' ? 'نسخ إلى قائمة أخرى' : 'Copy to another list'), onTap: () => Navigator.pop(ctx, 'copy')),
       ListTile(leading: const Icon(Icons.drive_file_move), title: Text(language == 'ar' ? 'نقل إلى قائمة أخرى' : 'Move to another list'), onTap: () => Navigator.pop(ctx, 'move')),
@@ -436,6 +506,8 @@ class _HomePageState extends State<HomePage> {
     if (confirmed != true || !mounted) return;
     var deleted = 0;
     for (final entry in records.entries) {
+      // Monthly statement deletion must never erase the independent debt ledger.
+      if (entry.key == 'debts') continue;
       entry.value.removeWhere((record) {
         final date = (record['date'] ?? '').toString();
         final remove = date.length >= 7 && date.substring(0, 7) == month;
@@ -522,7 +594,7 @@ class _HomePageState extends State<HomePage> {
     if(list.isEmpty && key!='debts')return Center(child:Text(t('empty')));
     return ListView.builder(padding:const EdgeInsets.fromLTRB(12,4,12,90),itemCount:list.length+(key=='debts'?1:0),itemBuilder:(ctx,i){
       if(key=='debts' && i==list.length){
-        double remaining(Map<String,dynamic> r){final a=(r['amount'] as num?)?.toDouble()??0,p=(r['repaid'] as num?)?.toDouble()??0;return (a-p).clamp(0.0,a).toDouble();}
+        double remaining(Map<String,dynamic> r)=>_debtRemainingAsOf(r,selectedMonth);
         final receivable=list.where((r)=>r['debtKind']=='receivable').fold<double>(0,(s,r)=>s+remaining(r));
         final payable=list.where((r)=>r['debtKind']!='receivable').fold<double>(0,(s,r)=>s+remaining(r));
         return Card(color:const Color(0xFFECEFEB),margin:const EdgeInsets.only(top:10,bottom:18),child:Padding(padding:const EdgeInsets.all(16),child:Column(children:[
@@ -535,6 +607,8 @@ class _HomePageState extends State<HomePage> {
         ])));
       }
       final r=list[i];final paid=r['paid']==true;final deferred=r['deferredTo']!=null;
+      final debtRemaining=key=='debts'?_debtRemainingAsOf(r,selectedMonth):0.0;
+      final debtPayments=key=='debts' && r['payments'] is List ? (r['payments'] as List).whereType<Map>().map((e)=>Map<String,dynamic>.from(e)).where((p)=>(p['date']??'').toString().length>=7&&(p['date'] as String).substring(0,7).compareTo(selectedMonth)<=0).toList() : <Map<String,dynamic>>[];
       final amount=(r['amount'] as num?)?.toDouble()??0;
       final signed=key=='savings'&&r['kind']=='out'?-amount:amount;
       final debtColor=key=='debts'
@@ -550,9 +624,12 @@ class _HomePageState extends State<HomePage> {
           if((r['costCenter']??'').toString().trim().isNotEmpty)Text(t('costCenter')+': '+r['costCenter'].toString(),style:Theme.of(context).textTheme.bodySmall?.copyWith(color:debtColor)),
           if(deferred)Chip(label:Text('${t('deferred')}: ${r['deferredTo']}'),visualDensity:VisualDensity.compact),
           if(key=='income')Text(t(r['type']??'other'),style:Theme.of(context).textTheme.bodySmall),
-          if(key=='debts')Text('${t(r['debtKind']=='receivable'?'debtOwedToMe':'debtOwedByMe')} · ${t('debtRemaining')}: ${money((amount-(r['repaid'] as num? ?? 0)).clamp(0,amount))}',style:Theme.of(context).textTheme.bodySmall?.copyWith(color:debtColor,fontWeight:FontWeight.w600)),
+          if(key=='debts')Text('${t(r['debtKind']=='receivable'?'debtOwedToMe':'debtOwedByMe')} · ${t('debtRemaining')}: ${money(debtRemaining)}',style:Theme.of(context).textTheme.bodySmall?.copyWith(color:debtColor,fontWeight:FontWeight.w600)),
+           if(key=='debts')Text('${t('debtAsOf')} $selectedMonth',style:Theme.of(context).textTheme.bodySmall),
+           if(key=='debts' && debtPayments.isNotEmpty)Padding(padding:const EdgeInsets.only(top:4),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(t('debtHistory'),style:const TextStyle(fontWeight:FontWeight.w600,fontSize:12)),...debtPayments.map((p)=>Text('${p['date'] ?? ''} · ${money((p['amount'] as num?) ?? 0)}${(p['note']??'').toString().isEmpty?'':' · ${p['note']}'}',style:Theme.of(context).textTheme.bodySmall))])),
           Wrap(spacing:4,children:[
-            TextButton(onPressed:()=>addRecord(key,r),child:Text(t('edit'))),
+            if(key=='debts' && debtRemaining>0)TextButton(onPressed:()=>recordDebtPayment(r),child:Text(t('debtPay'))),
+             TextButton(onPressed:()=>addRecord(key,r),child:Text(t('edit'))),
             if(key=='purchases'&&!deferred)TextButton(onPressed:()=>deferPurchase(r),child:Text(t('defer'))),
             TextButton(onPressed:()=>deleteRecord(key,r),child:Text(t('delete'))),
           ])
@@ -583,12 +660,14 @@ class _HomePageState extends State<HomePage> {
     final exp=fixed+variable, net=inc-exp, prevInc=_sumMonth('income',prev), prevExp=_sumMonth('fixed',prev)+_sumMonth('variable',prev);
     final deposits=_savingMonth(selectedMonth,'in'), withdrawals=_savingMonth(selectedMonth,'out');
     final savingsBalance=records['savings']!.fold<double>(0.0,(s,r)=>s+((((r['kind']??'in')=='out'?-1:1)*((r['amount'] as num?)?.toDouble()??0)).toDouble()));
-    final debtReceivable=records['debts']!.where((r)=>r['debtKind']=='receivable').fold<double>(0.0,(s,r){final a=(r['amount'] as num?)?.toDouble()??0,p=(r['repaid'] as num?)?.toDouble()??0;return s+(a-p).clamp(0.0,a).toDouble();});
-    final debtPayable=records['debts']!.where((r)=>r['debtKind']!='receivable').fold<double>(0.0,(s,r){final a=(r['amount'] as num?)?.toDouble()??0,p=(r['repaid'] as num?)?.toDouble()??0;return s+(a-p).clamp(0.0,a).toDouble();});
+    final debtAtMonth=records['debts']!.where((r)=>monthOf(r).compareTo(selectedMonth)<=0).toList();
+    final debtReceivable=debtAtMonth.where((r)=>r['debtKind']=='receivable').fold<double>(0.0,(s,r)=>s+_debtRemainingAsOf(r,selectedMonth));
+    final debtPayable=debtAtMonth.where((r)=>r['debtKind']!='receivable').fold<double>(0.0,(s,r)=>s+_debtRemainingAsOf(r,selectedMonth));
     final debtOpen=debtPayable-debtReceivable;
     final debtReceivableMonth=records['debts']!.where((r)=>(r['date']??'').toString().startsWith(selectedMonth)&&r['debtKind']=='receivable').fold<double>(0.0,(s,r)=>s+((r['amount'] as num?)?.toDouble()??0));
     final debtPayableMonth=records['debts']!.where((r)=>(r['date']??'').toString().startsWith(selectedMonth)&&r['debtKind']!='receivable').fold<double>(0.0,(s,r)=>s+((r['amount'] as num?)?.toDouble()??0));
     final debtMonth=debtPayableMonth-debtReceivableMonth;
+    final debtPaymentsMonth=records['debts']!.fold<double>(0.0,(s,r){final raw=r['payments'];if(raw is! List)return s;return s+raw.whereType<Map>().where((p)=>(p['date']??'').toString().startsWith(selectedMonth)).fold<double>(0.0,(v,p)=>v+((p['amount'] as num?)?.toDouble()??0));});
     final centers=<String,double>{}, incomeCenters=<String,double>{};
     for(final r in records['income']!.where((r)=>(r['date']??'').toString().startsWith(selectedMonth))){final c=_costCenter(r);incomeCenters[c]=(incomeCenters[c]??0)+((r['amount'] as num?)?.toDouble()??0);}
     for(final key in ['fixed','variable']){for(final r in records[key]!.where((r)=>(r['date']??'').toString().startsWith(selectedMonth))){final c=_costCenter(r);centers[c]=(centers[c]??0)+((r['amount'] as num?)?.toDouble()??0);}}
@@ -630,7 +709,7 @@ class _HomePageState extends State<HomePage> {
       _aSection(t('centers'),centerRows.isEmpty?[Text(language=='ar'?'لا توجد بيانات مصنفة':'No classified expenses')]:centerRows.map((e)=>_aLine(e.key,money(e.value),detail:exp>0?(e.value/exp*100).toStringAsFixed(1)+'%':'')).toList()),
       _aSection(t('incomeRecurring'),ri.isEmpty?[Text(language=='ar'?'لا توجد بنود دخل متكررة بعد':'No recurring income items yet')]:ri.map((g)=>_aLine(g['name'] as String,money(g['current'] as double),detail:g['center'].toString()+' · '+(g['months'] as Set<String>).length.toString()+' '+t('occurrences')+' · '+t('periodTotal')+': '+money(g['total'] as double))).toList()),
       _aSection(t('expenseRecurring'),re.isEmpty?[Text(language=='ar'?'لا توجد بنود مصروفات متكررة بعد':'No recurring expense items yet')]:re.map((g)=>_aLine(g['name'] as String,money(g['current'] as double),detail:t(g['key'] as String)+' · '+g['center'].toString()+' · '+(g['months'] as Set<String>).length.toString()+' '+t('occurrences')+' · '+t('periodTotal')+': '+money(g['total'] as double))).toList()),
-      _aSection(t('debtAnalysis'),[_aLine(t('debtReceivable'),money(debtReceivable)),_aLine(t('debtPayable'),money(debtPayable)),_aLine(t('debtNet'),money(debtOpen),detail:language=='ar'?'الموجب يعني أن عليك أكثر، والسالب يعني أن لك أكثر':'Positive means more payable; negative means more receivable'),_aLine(language=='ar'?'صافي الديون الجديدة هذا الشهر':'Net new debt this month',money(debtMonth))]),
+      _aSection(t('debtAnalysis'),[_aLine(t('debtReceivable'),money(debtReceivable)),_aLine(t('debtPayable'),money(debtPayable)),_aLine(t('debtNet'),money(debtOpen),detail:language=='ar'?'الرصيد التراكمي حتى الشهر المحدد':'Cumulative balance through selected month'),_aLine(language=='ar'?'صافي الديون الجديدة هذا الشهر':'Net new debt this month',money(debtMonth)),_aLine(language=='ar'?'إجمالي السداد خلال الشهر':'Payments recorded this month',money(debtPaymentsMonth))]),
       _aSection(t('savingsAnalysis'),[_aLine(language=='ar'?'الإيداعات':'Deposits',money(deposits)),_aLine(language=='ar'?'السحوبات':'Withdrawals',money(withdrawals)),_aLine(language=='ar'?'صافي حركة الشهر':'Monthly net movement',money(deposits-withdrawals)),_aLine(language=='ar'?'رصيد الادخار التراكمي':'Cumulative savings balance',money(savingsBalance))]),
       Padding(padding:const EdgeInsets.all(8),child:Text(language=='ar'?'البنود القديمة بلا مركز تكلفة تظهر ضمن «غير مصنف». ويُكتشف التكرار عند ظهور الاسم والقائمة ومركز التكلفة في شهرين مختلفين على الأقل.':'Legacy items without a cost center are shown as Unassigned. Recurrence means the same item, list and cost center appear in at least two different months.',style:Theme.of(context).textTheme.bodySmall)),
     ]);
