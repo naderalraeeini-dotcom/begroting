@@ -529,6 +529,21 @@ class _HomePageState extends State<HomePage> {
       auditLog
         ..clear()
         ..addAll(restoredAudit);
+      final rawHints = data['hintMemory'];
+      if (rawHints != null) {
+        if (rawHints is! Map) throw const FormatException('Invalid suggestion memory');
+        final restoredHints = <String,List<String>>{};
+        for (final entry in rawHints.entries) {
+          if (entry.value is! List) throw const FormatException('Invalid suggestion list');
+          restoredHints[entry.key.toString()] = (entry.value as List)
+              .map((value)=>value.toString())
+              .where((value)=>value.trim().isNotEmpty)
+              .toList().take(80).toList();
+        }
+        hintMemory
+          ..clear()
+          ..addAll(restoredHints);
+      }
       language = (data['language'] ?? language).toString();
       currency = (data['currency'] ?? currency).toString();
       pin = (data['pin'] ?? pin).toString();
