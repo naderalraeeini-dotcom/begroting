@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
@@ -33,6 +34,8 @@ class _HomePageState extends State<HomePage> {
   bool appLock = false;
   int tabIndex = 0;
   bool loaded = false;
+  final List<Map<String,dynamic>> auditLog = [];
+  Timer? _holdTimer;
 
   static String _month(DateTime d) => '${d.year}-${d.month.toString().padLeft(2,'0')}';
   Map<String,String> get labels {
@@ -46,7 +49,7 @@ class _HomePageState extends State<HomePage> {
   String money(num n) => '${n.toStringAsFixed(2)} $currency';
   Future<void> persist() async {
     final p = await SharedPreferences.getInstance();
-    await p.setString(storageKey, jsonEncode({'version':1,'records':records,'language':language,'currency':currency,'pin':pin,'appLock':appLock,'selectedMonth':selectedMonth}));
+    await p.setString(storageKey, jsonEncode({'version':2,'records':records,'auditLog':auditLog,'language':language,'currency':currency,'pin':pin,'appLock':appLock,'selectedMonth':selectedMonth}));
   }
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
@@ -58,6 +61,7 @@ class _HomePageState extends State<HomePage> {
         for (final k in records.keys) {
           records[k] = (rs[k] as List? ?? []).map((e) => Map<String,dynamic>.from(e)).toList();
         }
+        auditLog..clear()..addAll(((d['auditLog'] as List?) ?? []).map((e) => Map<String,dynamic>.from(e)));
         language = d['language'] ?? 'nl'; currency = d['currency'] ?? 'EUR'; pin = d['pin'] ?? ''; appLock = d['appLock'] ?? false;
         selectedMonth = d['selectedMonth'] ?? _month(DateTime.now());
       } catch (_) {}
@@ -118,6 +122,40 @@ class _HomePageState extends State<HomePage> {
     if(res==null)return;
     if(existing==null){res['id']=DateTime.now().microsecondsSinceEpoch.toString();records[key]!.add(res);}else{existing.addAll(res);}
     await persist(); if(mounted)setState((){});
+  }
+  String _newId() => '${DateTime.now().microsecondsSinceEpoch}-${records.values.fold<int>(0,(n,l)=>n+l.length)}';
+  void _audit(String action,String source,String target,Map<String,dynamic> r) => auditLog.add({'id':_newId(),'at':DateTime.now().toIso8601String(),'action':action,'source':source,'target':target,'record':Map<String,dynamic>.from(r)});
+  Future<void> copyPreviousMonthItems(String targetMonth) async {
+    final p=targetMonth.split('-');final d=DateTime(int.parse(p[0]),int.parse(p[1]),1);final prev=_month(DateTime(d.year,d.month-1,1));
+    final items=<Map<String,dynamic>>[];
+    for(final k in ['income','fixed']){for(final r in records[k]!.where((x)=>monthOf(x)==prev)){items.add({'key':k,'record':r,'selected':true});}}
+    if(items.isEmpty)return;
+    final chosen=await showDialog<List<int>>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setD)=>AlertDialog(
+      title:Text(language=='ar'?'نسخ بنود من الشهر السابق':'Copy previous month items'),
+      content:SizedBox(width:double.maxFinite,child:Column(mainAxisSize:MainAxisSize.min,children:[
+        Wrap(children:[TextButton(onPressed:()=>setD(()=>items.forEach((x)=>x['selected']=true)),child:Text(language=='ar'?'تحديد الكل':'Select all')),TextButton(onPressed:()=>setD(()=>items.forEach((x)=>x['selected']=false)),child:Text(language=='ar'?'إلغاء الكل':'Clear all'))]),
+        Flexible(child:ListView(shrinkWrap:true,children:List.generate(items.length,(i){final x=items[i];final r=x['record'] as Map<String,dynamic>;return CheckboxListTile(value:x['selected'] as bool,title:Text(r['name']??''),subtitle:Text('${t(x['key'] as String)} · ${money((r['amount'] as num?)??0)}'),onChanged:(v)=>setD(()=>x['selected']=v??false));})))
+      ])),
+      actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,List.generate(items.length,(i)=>i).where((i)=>items[i]['selected']==true).toList()),child:Text(language=='ar'?'نسخ المحدد':'Copy selected'))]
+    )));
+    if(chosen==null)return;
+    for(final i in chosen){final x=items[i];final k=x['key'] as String;final old=x['record'] as Map<String,dynamic>;final day=(old['date']??'$targetMonth-01').toString().substring(8,10);final c=Map<String,dynamic>.from(old)..['id']=_newId()..['date']='$targetMonth-$day';c.remove('deferredTo');records[k]!.add(c);_audit('monthly_copy',k,k,c);}
+    await persist();if(mounted)setState(()=>selectedMonth=targetMonth);
+  }
+  Future<void> itemActions(String source,Map<String,dynamic> r) async {
+    final action=await showModalBottomSheet<String>(context:context,builder:(ctx)=>SafeArea(child:Column(mainAxisSize:MainAxisSize.min,children:[
+      ListTile(leading:const Icon(Icons.copy),title:Text(language=='ar'?'نسخ البيان':'Copy item'),onTap:()=>Navigator.pop(ctx,'copy')),
+      ListTile(leading:const Icon(Icons.drive_file_move),title:Text(language=='ar'?'نقل البيان':'Move item'),onTap:()=>Navigator.pop(ctx,'move')),
+      ListTile(leading:const Icon(Icons.category),title:Text(language=='ar'?'تغيير التصنيف':'Change category'),onTap:()=>Navigator.pop(ctx,'category'))
+    ])));
+    if(action==null||!mounted)return;
+    final cats=['income','fixed','variable','debts'];
+    final target=await showDialog<String>(context:context,builder:(ctx)=>AlertDialog(title:Text(language=='ar'?'اختر التصنيف':'Choose category'),content:Column(mainAxisSize:MainAxisSize.min,children:cats.where((k)=>action=='copy'||k!=source).map((k)=>ListTile(title:Text(t(k)),onTap:()=>Navigator.pop(ctx,k))).toList()),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:Text(t('cancel')))]));
+    if(target==null||!await authorize())return;
+    final snapshot=Map<String,dynamic>.from(r);
+    if(action=='copy'){final c=Map<String,dynamic>.from(r)..['id']=_newId();records[target]!.add(c);_audit('copy',source,target,c);}
+    else{records[source]!.removeWhere((x)=>x['id']==r['id']);final c=Map<String,dynamic>.from(r)..['id']=_newId();records[target]!.add(c);_audit(action=='move'?'move':'reclassify',source,target,snapshot);}
+    await persist();if(mounted)setState((){});
   }
   Future<void> togglePaid(String key, Map<String,dynamic> r, bool value) async { if(!await authorize())return; r['paid']=value; await persist(); if(mounted)setState((){}); }
   Future<void> deleteRecord(String key, Map<String,dynamic> r) async { if(!await authorize())return; final ok=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(content:Text(t('deleteAsk')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:Text(t('cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:Text(t('delete')))])); if(ok==true){records[key]!.removeWhere((x)=>x['id']==r['id']);await persist();if(mounted)setState((){});} }
@@ -180,7 +218,7 @@ class _HomePageState extends State<HomePage> {
     return Directionality(textDirection:rtl?TextDirection.rtl:TextDirection.ltr,child:Scaffold(
       appBar:AppBar(backgroundColor:const Color(0xFF173F35),foregroundColor:Colors.white,title:Row(children:[Container(width:38,height:38,decoration:BoxDecoration(border:Border.all(color:const Color(0xFFD7B76D)),borderRadius:BorderRadius.circular(12)),child:const Center(child:Text('B',style:TextStyle(color:Color(0xFFD7B76D),fontWeight:FontWeight.bold,fontSize:22)))),const SizedBox(width:10),Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Text('Begroting',style:TextStyle(fontWeight:FontWeight.bold)),Text(slogan,style:const TextStyle(fontSize:12,color:Color(0xFFE9D9A6)))]))]),actions:[IconButton(onPressed:settings,icon:const Icon(Icons.settings))]),
       body:Column(children:[
-        Padding(padding:const EdgeInsets.all(12),child:Row(children:[Text(t('month')),const SizedBox(width:8),Expanded(child:DropdownButtonFormField<String>(value:monthList.contains(selectedMonth)?selectedMonth:monthList.first,decoration:const InputDecoration(isDense:true,border:OutlineInputBorder()),items:monthList.map((m)=>DropdownMenuItem(value:m,child:Text(m))).toList(),onChanged:(v)async{if(v!=null){setState(()=>selectedMonth=v);await persist();}})),IconButton(onPressed:()async{final d=await showDatePicker(context:context,initialDate:DateTime.now(),firstDate:DateTime(2000),lastDate:DateTime(2100));if(d!=null){setState(()=>selectedMonth=_month(d));await persist();}},icon:const Icon(Icons.add_circle_outline))])),
+        Padding(padding:const EdgeInsets.all(12),child:Row(children:[Text(t('month')),const SizedBox(width:8),Expanded(child:DropdownButtonFormField<String>(value:monthList.contains(selectedMonth)?selectedMonth:monthList.first,decoration:const InputDecoration(isDense:true,border:OutlineInputBorder()),items:monthList.map((m)=>DropdownMenuItem(value:m,child:Text(m))).toList(),onChanged:(v)async{if(v!=null){setState(()=>selectedMonth=v);await persist();}})),IconButton(onPressed:()async{final d=await showDatePicker(context:context,initialDate:DateTime.now(),firstDate:DateTime(2000),lastDate:DateTime(2100));if(d!=null){final target=_month(d);final prev=_month(DateTime(d.year,d.month-1,1));final has=records['income']!.any((r)=>monthOf(r)==prev)||records['fixed']!.any((r)=>monthOf(r)==prev);if(has){await copyPreviousMonthItems(target);}else{setState(()=>selectedMonth=target);await persist();}}},icon:const Icon(Icons.add_circle_outline))])),
         Padding(padding:const EdgeInsets.symmetric(horizontal:12),child:Row(children:[
           _metric(t('incomeTotal'),money(inc),const Color(0xFFE6F1E8)),
           const SizedBox(width:8),_metric(t('expenseTotal'),money(exp),const Color(0xFFFFEEE5)),
@@ -193,6 +231,7 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton:currentKey=='statement'?FloatingActionButton.extended(onPressed:backup,icon:const Icon(Icons.backup),label:Text(t('backup'))):FloatingActionButton.extended(onPressed:()=>addRecord(currentKey),icon:const Icon(Icons.add),label:Text(t('add'))),
     ));
   }
+  @override void dispose(){_holdTimer?.cancel();super.dispose();}
   Widget _metric(String title,String value,Color color)=>Expanded(child:Container(padding:const EdgeInsets.all(10),decoration:BoxDecoration(color:color,borderRadius:BorderRadius.circular(14)),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Text(title,style:const TextStyle(fontSize:11)),const SizedBox(height:5),FittedBox(fit:BoxFit.scaleDown,child:Text(value,style:const TextStyle(fontWeight:FontWeight.bold,fontSize:14)))])));
   Widget _recordList(String key) {
     final list=forMonth(key);
@@ -201,7 +240,7 @@ class _HomePageState extends State<HomePage> {
       final r=list[i];final paid=r['paid']==true;final deferred=r['deferredTo']!=null;
       final amount=(r['amount'] as num?)?.toDouble()??0;
       final signed=key=='savings'&&r['kind']=='out'?-amount:amount;
-      return Card(color:paid?const Color(0xFFECEFEB):Colors.white,child:Padding(padding:const EdgeInsets.all(12),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
+      return GestureDetector(onLongPressStart:(_){_holdTimer?.cancel();_holdTimer=Timer(const Duration(seconds:3),(){if(mounted)itemActions(key,r);});},onLongPressEnd:(_)=>_holdTimer?.cancel(),onLongPressCancel:()=>_holdTimer?.cancel(),child:Card(color:paid?const Color(0xFFECEFEB):Colors.white,child:Padding(padding:const EdgeInsets.all(12),child:Row(crossAxisAlignment:CrossAxisAlignment.start,children:[
         if(['fixed','variable','purchases'].contains(key))Checkbox(value:paid,onChanged:(v)=>togglePaid(key,r,v??false)),
         Expanded(child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
           Text(r['name']??'',style:TextStyle(fontWeight:FontWeight.bold,decoration:paid?TextDecoration.lineThrough:null,color:paid?Colors.grey.shade600:null)),
@@ -218,7 +257,7 @@ class _HomePageState extends State<HomePage> {
         ])),
         const SizedBox(width:8),
         Text(money(signed),style:TextStyle(fontWeight:FontWeight.bold,color:paid?Colors.grey.shade600:const Color(0xFF245B4B))),
-      ])));
+      ]))));
     });
   }
   Widget _debtList() => _recordList('debts');
