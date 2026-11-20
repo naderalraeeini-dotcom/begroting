@@ -274,7 +274,7 @@ class _HomePageState extends State<HomePage> {
             _hintField(controller:name,memoryKey:_nameHintKey(key),label:t('name'),refresh:setD,textInputAction:TextInputAction.next),
             TextField(controller:amount, textInputAction:TextInputAction.next, keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:false), decoration:InputDecoration(labelText:t('amount'))),
             TextField(controller:note, textInputAction:TextInputAction.newline, minLines:1, maxLines:3, decoration:InputDecoration(labelText:t('note'))),
-            _hintField(controller:costCenter,memoryKey:'costCenter',label:t('costCenter'),refresh:setD,textInputAction:TextInputAction.next),
+            _hintField(controller:costCenter,memoryKey:'costCenter',label:key=='debts'?(language=='ar'?'اسم صاحب الدين / مركز تكلفة الدين':'Creditor name / debt cost center'):t('costCenter'),refresh:setD,textInputAction:TextInputAction.next),
             const SizedBox(height:8),
             ListTile(contentPadding:EdgeInsets.zero,title:Text('${t('date')}: $date'),trailing:const Icon(Icons.calendar_month),onTap:() async {
               final parsed = DateTime.tryParse(date);
