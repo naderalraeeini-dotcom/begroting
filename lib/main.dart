@@ -37,6 +37,8 @@ class _HomePageState extends State<HomePage> {
   int tabIndex = 0;
   bool loaded = false;
   final List<Map<String,dynamic>> auditLog = [];
+  // Persistent, privacy-local autocomplete memory. Values are scoped by field type.
+  final Map<String,List<String>> hintMemory = {};
   Timer? _holdTimer;
 
   static String _month(DateTime d) => '${d.year}-${d.month.toString().padLeft(2,'0')}';
@@ -51,7 +53,7 @@ class _HomePageState extends State<HomePage> {
   String money(num n) => '${n.toStringAsFixed(2)} $currency';
   Future<void> persist() async {
     final p = await SharedPreferences.getInstance();
-    await p.setString(storageKey, jsonEncode({'version':2,'records':records,'auditLog':auditLog,'language':language,'currency':currency,'pin':pin,'appLock':appLock,'selectedMonth':selectedMonth}));
+    await p.setString(storageKey, jsonEncode({'version':2,'records':records,'auditLog':auditLog,'language':language,'currency':currency,'pin':pin,'appLock':appLock,'selectedMonth':selectedMonth,'hintMemory':hintMemory}));
   }
   Future<void> load() async {
     final p = await SharedPreferences.getInstance();
@@ -66,6 +68,12 @@ class _HomePageState extends State<HomePage> {
         auditLog..clear()..addAll(((d['auditLog'] as List?) ?? []).map((e) => Map<String,dynamic>.from(e)));
         language = d['language'] ?? 'nl'; currency = d['currency'] ?? 'EUR'; pin = d['pin'] ?? ''; appLock = d['appLock'] ?? false;
         selectedMonth = d['selectedMonth'] ?? _month(DateTime.now());
+        final savedHints = d['hintMemory'];
+        if (savedHints is Map) {
+          hintMemory
+            ..clear()
+            ..addAll(savedHints.map((k,v) => MapEntry(k.toString(), (v is List ? v : const []).map((x)=>x.toString()).where((x)=>x.trim().isNotEmpty).toList().take(80).toList()));
+        }
       } catch (_) {}
     }
     if (mounted) setState(() => loaded = true);
@@ -193,6 +201,51 @@ class _HomePageState extends State<HomePage> {
     final ok = await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:Text(t('security')),content:Text(t('confirm')),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:Text(t('cancel'))),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:Text(t('ok')))]));
     return ok == true;
   }
+  String _nameHintKey(String key) => key == 'purchases' || key == 'debts' ? 'name:$key' : 'name:general';
+  void _rememberHint(String key, String value) {
+    final clean = value.trim();
+    if (clean.isEmpty) return;
+    final values = hintMemory.putIfAbsent(key, () => <String>[]);
+    values.removeWhere((v) => v.toLowerCase() == clean.toLowerCase());
+    values.insert(0, clean);
+    if (values.length > 80) values.removeRange(80, values.length);
+  }
+  Widget _hintField({
+    required TextEditingController controller,
+    required String memoryKey,
+    required String label,
+    required void Function(void Function()) refresh,
+    int minLines = 1,
+    int maxLines = 1,
+    TextInputAction? textInputAction,
+  }) {
+    final query = controller.text.trim().toLowerCase();
+    final options = (hintMemory[memoryKey] ?? <String>[])
+        .where((v) => query.isEmpty || v.toLowerCase().contains(query))
+        .take(5).toList();
+    return Column(crossAxisAlignment:CrossAxisAlignment.stretch,mainAxisSize:MainAxisSize.min,children:[
+      TextField(
+        controller:controller,
+        minLines:minLines,
+        maxLines:maxLines,
+        textInputAction:textInputAction,
+        onChanged:(_) => refresh(() {}),
+        decoration:InputDecoration(labelText:label),
+      ),
+      if (options.isNotEmpty && query.isNotEmpty)
+        Padding(padding:const EdgeInsets.only(top:4,bottom:4),child:Wrap(
+          spacing:6,runSpacing:4,
+          children:options.map((value)=>ActionChip(
+            visualDensity:VisualDensity.compact,
+            avatar:const Icon(Icons.history,size:15),
+            label:Text(value,maxLines:1,overflow:TextOverflow.ellipsis),
+            onPressed:()=>refresh(()=>controller.value=TextEditingValue(
+              text:value,selection:TextSelection.collapsed(offset:value.length),
+            )),
+          )).toList(),
+        )),
+    ]);
+  }
   Future<void> addRecord(String key, [Map<String,dynamic>? existing]) async {
     if (existing != null && !await authorize()) return;
 
@@ -217,10 +270,10 @@ class _HomePageState extends State<HomePage> {
         builder: (ctx) => StatefulBuilder(builder: (ctx,setD) => AlertDialog(
           title: Text(existing == null ? t('add') : t('edit')),
           content: SingleChildScrollView(child: Column(mainAxisSize:MainAxisSize.min,children:[
-            TextField(controller:name, textInputAction:TextInputAction.next, decoration:InputDecoration(labelText:t('name'))),
+            _hintField(controller:name,memoryKey:_nameHintKey(key),label:t('name'),refresh:setD,textInputAction:TextInputAction.next),
             TextField(controller:amount, textInputAction:TextInputAction.next, keyboardType:const TextInputType.numberWithOptions(decimal:true,signed:false), decoration:InputDecoration(labelText:t('amount'))),
             TextField(controller:note, textInputAction:TextInputAction.newline, minLines:1, maxLines:3, decoration:InputDecoration(labelText:t('note'))),
-            TextField(controller:costCenter, textInputAction:TextInputAction.next, decoration:InputDecoration(labelText:t('costCenter'))),
+            _hintField(controller:costCenter,memoryKey:'costCenter',label:t('costCenter'),refresh:setD,textInputAction:TextInputAction.next),
             const SizedBox(height:8),
             ListTile(contentPadding:EdgeInsets.zero,title:Text('${t('date')}: $date'),trailing:const Icon(Icons.calendar_month),onTap:() async {
               final parsed = DateTime.tryParse(date);
@@ -273,6 +326,9 @@ class _HomePageState extends State<HomePage> {
     }
     if(res==null)return;
     if(existing==null){res['id']=_newId();records[key]!.add(res);}else{existing.addAll(res);}
+    // Learn only from explicitly saved values; suggestions never create records.
+    _rememberHint(_nameHintKey(key),res['name']?.toString() ?? '');
+    _rememberHint('costCenter',res['costCenter']?.toString() ?? '');
     await persist();
     if(mounted)setState((){});
   }
